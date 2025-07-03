@@ -31,6 +31,7 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
    - `NeuralNetworkMobject`：シンプルな多層パーセプトロンを構築するためのクラス。
      - 順伝播と逆伝播の際のアクティベーションなどを可視化するメソッドを用意。`forward_pass_animation,backprop_animation`
     - ニューロンの数や層数はリストを渡すことで決定できる。`nn = NeuralNetworkMobject([5, 20, 14, 8])`
+  
     <iframe
         src="https://youtu.be/Oq9hD7kGuLg"
         title="Preview"
@@ -42,16 +43,19 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
       - `Convolution`:畳み込み演算を可視化するためのクラス。
       - `CalConvolution`:畳み込み演算を実査に計算し特徴マップを作成する過程を可視化する。少しレンダリングが重いため、画像サイズには注意が必要。
       - `PixelsAsSquare`：画像のピクセルをSquareで表示するためのクラス。(グレースケール用)
+  
         <img src="./MNIST9.png" width="50%">
+
       - `PixelsAsSquareColor`：画像のピクセルをSquareで表示するためのクラス。(カラー用)
         - 画像はNumpy配列に変換されている必要があるが、画像をNumpy配列に変換するための関数`image_to_array`も用意。
     - Numpy配列をManim.Matrixに変換するための関数`array_to_matrix`も用意。
+  
     <iframe
     src="https://youtu.be/HDcqQeFiKuo"
     title="Preview"
     >
     </iframe>
 
-1. Transformer.py　(未着手)開発予定
+3. Transformer.py　(未着手)開発予定
    - トランスフォーマーにおける演算などを可視化するクラス。
 
