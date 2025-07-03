@@ -32,11 +32,7 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
      - 順伝播と逆伝播の際のアクティベーションなどを可視化するメソッドを用意。`forward_pass_animation,backprop_animation`
     - ニューロンの数や層数はリストを渡すことで決定できる。`nn = NeuralNetworkMobject([5, 20, 14, 8])`
   
-    <iframe
-        src="https://youtu.be/Oq9hD7kGuLg"
-        title="Preview"
-    >
-    </iframe>
+    [![Preview](https://img.youtube.com/vi/Oq9hD7kGuLg/0.jpg)](https://youtu.be/Oq9hD7kGuLg)
 
 2. Convolution.py (開発済み)(名前未定)
     - 主にCNNを可視化するためのプログラム
@@ -50,11 +46,7 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
         - 画像はNumpy配列に変換されている必要があるが、画像をNumpy配列に変換するための関数`image_to_array`も用意。
     - Numpy配列をManim.Matrixに変換するための関数`array_to_matrix`も用意。
   
-    <iframe
-    src="https://youtu.be/HDcqQeFiKuo"
-    title="Preview"
-    >
-    </iframe>
+    [![Preview](https://img.youtube.com/vi/HDcqQeFiKuo/0.jpg)](https://youtu.be/HDcqQeFiKuo)
 
 3. Transformer.py　(未着手)開発予定
    - トランスフォーマーにおける演算などを可視化するクラス。
