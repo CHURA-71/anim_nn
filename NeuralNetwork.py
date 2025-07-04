@@ -52,7 +52,6 @@ class NeuralNetworkMobject(VGroup):
     def _construct_network(self):
         """ネットワークのMobjectを生成する内部メソッド。"""
         self._create_neuron_layers()
-        # ニューロン層が配置された後にエッジを生成
         self.neuron_layers.arrange(RIGHT, buff=self.layer_to_layer_buff)
         self._create_edge_layers()
 
