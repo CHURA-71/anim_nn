@@ -1,0 +1,12 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/1185818338_3823685033_223132457.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_307490255_2417240656.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_4071516364_2540108693.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_73419536_4256697536.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_3805613807_182916348.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_3981825577_2289602990.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_859569196_1128217214.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_544995179_372540895.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_1803344440_1596498812.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_4166842112_2034358189.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/PytorchManim/480p15/partial_movie_files/PyTorchToManim/624642324_3513574477_3858235267.mp4'
