@@ -1,4 +1,5 @@
 from manim import *
+import random
 
 # ----------------------------------------------------------------------------
 # ニューラルネットワーク Mobject クラス
@@ -20,6 +21,7 @@ class NeuralNetworkMobject(VGroup):
         neuron_to_neuron_buff=MED_SMALL_BUFF,
         layer_to_layer_buff=LARGE_BUFF,
         edge_color=WHITE,
+        edge_color_random=False,
         edge_stroke_width=1.5,
         max_shown_neurons=16,
         activation_color=YELLOW,
@@ -34,6 +36,7 @@ class NeuralNetworkMobject(VGroup):
         self.neuron_to_neuron_buff = neuron_to_neuron_buff
         self.layer_to_layer_buff = layer_to_layer_buff
         self.edge_color = edge_color
+        self.edge_color_random = edge_color_random
         self.edge_stroke_width = edge_stroke_width
         self.max_shown_neurons = max_shown_neurons
         self.activation_color = activation_color
@@ -96,34 +99,76 @@ class NeuralNetworkMobject(VGroup):
 
     def _create_neuron(self):
         """単一のニューロン（Circle）を生成する。"""
-        return Circle(
+        if self.edge_color_random == True:
+            return Circle(
             radius=self.neuron_radius,
-            stroke_color=self.neuron_stroke_color,
+            stroke_color=WHITE,
             fill_color=self.neuron_fill_color,
             fill_opacity=1,
-        )
+            )
+        else:
+            return Circle(
+                radius=self.neuron_radius,
+                stroke_color=self.neuron_stroke_color,
+                fill_color=self.neuron_fill_color,
+                fill_opacity=1,
+            )
 
-    def _create_edge_layers(self):
-        """ニューロン間のエッジを生成する。"""
-        for i in range(len(self._neuron_mobjects_list) - 1):
-            source_layer = self._neuron_mobjects_list[i]
-            target_layer = self._neuron_mobjects_list[i+1]
-            
-            edges = VGroup()
-            
-            # source_layerの全ニューロンとtarget_layerの全ニューロンを
-            # 総当たりで接続するための二重ループ（全結合層）。
-            for source_neuron in source_layer:
-                for target_neuron in target_layer:
-                    edge = Line(
-                        source_neuron.get_center(),
-                        target_neuron.get_center(),
-                        stroke_color=self.edge_color,
-                        stroke_width=self.edge_stroke_width,
-                        z_index=-1
-                    )
-                    edges.add(edge)
-            self.edge_layers.add(edges)
+    def _create_edge_layers(self,):
+        """
+        ニューロン間のエッジを生成する。
+        デフォルトで白色。edge_color_random=Trueにすると赤青ランダムに設定。
+        """
+        if self.edge_color_random == True:
+            for i in range(len(self._neuron_mobjects_list) - 1):
+                source_layer = self._neuron_mobjects_list[i]
+                target_layer = self._neuron_mobjects_list[i+1]
+                
+                edges = VGroup()
+                
+                # source_layerの全ニューロンとtarget_layerの全ニューロンを
+                # 総当たりで接続するための二重ループ（全結合層）。
+                for source_neuron in source_layer:
+                    for target_neuron in target_layer:
+                        dete_num = random.random()
+                        if dete_num >= 0.5:
+                            edge = Line(
+                                source_neuron.get_center(),
+                                target_neuron.get_center(),
+                                stroke_color=BLUE,
+                                stroke_width=self.edge_stroke_width,
+                                z_index=-1
+                            )
+                        else:
+                            edge = Line(
+                                source_neuron.get_center(),
+                                target_neuron.get_center(),
+                                stroke_color=RED,
+                                stroke_width=self.edge_stroke_width,
+                                z_index=-1
+                            ) 
+                        edges.add(edge)
+                self.edge_layers.add(edges)
+        else:
+            for i in range(len(self._neuron_mobjects_list) - 1):
+                source_layer = self._neuron_mobjects_list[i]
+                target_layer = self._neuron_mobjects_list[i+1]
+                
+                edges = VGroup()
+                
+                # source_layerの全ニューロンとtarget_layerの全ニューロンを
+                # 総当たりで接続するための二重ループ（全結合層）。
+                for source_neuron in source_layer:
+                    for target_neuron in target_layer:
+                        edge = Line(
+                            source_neuron.get_center(),
+                            target_neuron.get_center(),
+                            stroke_color=self.edge_color,
+                            stroke_width=self.edge_stroke_width,
+                            z_index=-1
+                        )
+                        edges.add(edge)
+                self.edge_layers.add(edges)
 
     def activate_layer(self, layer_index, color=None, animation_kwargs=None):
         """指定された層をハイライトするアニメーションを返す。"""
@@ -219,7 +264,7 @@ class TestNeuralNetworkScene(Scene):
         
         # 2. ネットワーク生成
         # 中間層を20ニューロンにし、省略表示をテスト
-        nn = NeuralNetworkMobject([5, 20, 14, 8]).scale(0.7)
+        nn = NeuralNetworkMobject([5, 20, 14, 8],edge_color_random=True).scale(0.7)
         self.play(Create(nn))
         self.wait(3)
         
