@@ -1,5 +1,3 @@
-# visualize_pytorch.py
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -275,9 +273,4 @@ class PyTorchToManim(Scene):
 
         self.MNISTforwardAnim(model,network,4,output_labels)
         self.MNISTforwardAnim(model,network,12,output_labels)
-        self.MNISTforwardAnim(model,network,29,output_labels)
-
-        
-
-    
-        
+        self.MNISTforwardAnim(model,network,29,output_labels)        

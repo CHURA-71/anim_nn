@@ -33,6 +33,10 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
     - ニューロンの数や層数はリストを渡すことで決定できる。`nn = NeuralNetworkMobject([5, 20, 14, 8])`
   
     [![Preview](https://img.youtube.com/vi/Oq9hD7kGuLg/0.jpg)](https://youtu.be/Oq9hD7kGuLg)
+   
+   - Modelを受け取り、そのアクティベーションによって色の変化が変わる`NeuralNetworkWithActivation`を実装
+  
+   <img src="./media/videos/PytorchManim/480p15/PyTorchToManim_ManimCE_v0.19.0.gif" >
 
 2. Convolution.py (開発済み)(名前未定)
     - 主にCNNを可視化するためのプログラム
