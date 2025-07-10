@@ -133,6 +133,7 @@ class PixelsAsSquare(VGroup):
         value_format_func=lambda v: f"{v/255.0:.1f}",
         font_size: int = 14,
         square_side_length: float = 1.0,
+        grid_buff: float = 0,
         stroke_width: float = 0.1,
         stroke_color: ManimColor = GRAY,
         contrast_threshold: float = 0.6,
@@ -149,6 +150,7 @@ class PixelsAsSquare(VGroup):
                                                     デフォルトは0-1の範囲で小数点以下1桁に丸める。
             font_size (int, optional): ピクセル値テキストのフォントサイズ。デフォルトは14。
             square_side_length (float, optional): 各ピクセルを表す正方形の一辺の長さ。デフォルトは1.0。
+            grid_buff(float):各ピクセルを並べる際のバッファの値を決める。デフォルトは0。
             stroke_width (float, optional): 正方形の境界線の幅。デフォルトは0.1。
             stroke_color (ManimColor, optional): 正方形の境界線の色。デフォルトはGRAY。
             contrast_threshold (float, optional): テキストの色を白か黒かを切り替える輝度の閾値。
@@ -202,7 +204,7 @@ class PixelsAsSquare(VGroup):
 
         # 作成したピクセルオブジェクトのリストからVGroupを作成し、グリッド状に配置
         self.add(*pixel_mobjects)
-        self.arrange_in_grid(rows=height, cols=width, buff=0)
+        self.arrange_in_grid(rows=height, cols=width, buff=grid_buff)
 
 
 # ----------------------------------------------------------------------------
@@ -218,6 +220,7 @@ class PixelsAsSquareColor(VGroup):
         image_data: np.ndarray,
         square_side_length: float = 1.0,
         stroke_width: float = 0.1,
+        grid_buff: float = 0,
         stroke_color: ManimColor = GRAY,
         **kwargs
     ):
@@ -262,7 +265,7 @@ class PixelsAsSquareColor(VGroup):
         
         # 作成したピクセルオブジェクトのリストからVGroupを作成し、グリッド状に配置
         self.add(*pixel_mobjects)
-        self.arrange_in_grid(rows=height, cols=width, buff=0)
+        self.arrange_in_grid(rows=height, cols=width, buff=grid_buff)
 
 # ----------------------------------------------------------------------------
 # 畳み込み可視化クラス 

@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -58,7 +59,7 @@ def train_model_if_needed(model, file_path="mnist_model.pth"):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    for epoch in range(2):
+    for epoch in range(5):
         running_loss = 0.0
         for images, labels in train_loader:
             optimizer.zero_grad()
@@ -73,7 +74,7 @@ def train_model_if_needed(model, file_path="mnist_model.pth"):
 
 
 # ----------------------------------------------------------------------------
-# ニューラルネットワーク Mobject クラス 
+# ニューラルネットワーク Mobject クラス(Model対応)
 # ----------------------------------------------------------------------------
 class NeuralNetworkWithActivation(NeuralNetworkMobject):
     """
@@ -185,6 +186,7 @@ class PyTorchToManim(Scene):
         img = Group(image_mobj,sor_rec)
 
         input_label_text = Tex(f"Input Digit: {label}", font_size=28).next_to(image_mobj, DOWN, buff=SMALL_BUFF)
+        input_label_text = Tex(f"Input Digit: {label}", font_size=28).next_to(image_mobj, DOWN, buff=SMALL_BUFF)
 
         self.play(
             FadeIn(img),
@@ -192,11 +194,13 @@ class PyTorchToManim(Scene):
         )
         
         input_layer_neurons = network_mob._neuron_mobjects_list[0]
-        Inputs=VGroup()
+        
+        Inputs = VGroup()
         for i in range(0,16):
-            input_circ = Circle(radius=0.15,color=WHITE,fill_opacity=1).move_to(image_mobj.get_center())
+            input_circ = Circle(radius=0.15,color=WHITE,fill_opacity=1).move_to(img.get_center())
             Inputs.add(input_circ)
-
+        
+        self.add(Inputs)
         self.play(
             AnimationGroup(
                 Inputs[i].animate.move_to(input_layer_neurons[i].get_center())
