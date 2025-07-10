@@ -1,4 +1,3 @@
-# visualize_pytorch.py
 
 import torch
 import torch.nn as nn
@@ -58,7 +57,7 @@ def train_model_if_needed(model, file_path="mnist_model.pth"):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    for epoch in range(2):
+    for epoch in range(5):
         running_loss = 0.0
         for images, labels in train_loader:
             optimizer.zero_grad()
@@ -73,7 +72,7 @@ def train_model_if_needed(model, file_path="mnist_model.pth"):
 
 
 # ----------------------------------------------------------------------------
-# ニューラルネットワーク Mobject クラス (★★ ここを修正 ★★)
+# ニューラルネットワーク Mobject クラス(Model対応)
 # ----------------------------------------------------------------------------
 class NeuralNetworkMobject(VGroup):
     def __init__(
@@ -250,7 +249,7 @@ class PyTorchToManim(Scene):
         sor_rec = SurroundingRectangle(image_mobj,color=BLUE)
         img = Group(image_mobj,sor_rec)
 
-        input_label_text = Text(f"Input Digit: {label}", font_size=28).next_to(image_mobj, DOWN, buff=SMALL_BUFF)
+        input_label_text = Tex(f"Input Digit: {label}", font_size=28).next_to(image_mobj, DOWN, buff=SMALL_BUFF)
 
         self.play(
             Create(network),
@@ -261,18 +260,22 @@ class PyTorchToManim(Scene):
         self.wait(1)
         
         input_layer_neurons = network._neuron_mobjects_list[0]
-        pixel_grid = VGroup(*[
-            Square(side_length=0.05, fill_opacity=1, stroke_width=0)
-            .set_color(interpolate_color(BLACK, WHITE, val.item()))
-            for val in image_for_vis.flatten()
-        ]).arrange_in_grid(28, 28, buff=0).move_to(image_mobj)
-
-        self.play(FadeOut(img), FadeIn(pixel_grid))
+        
+        Inputs = VGroup()
+        for i in range(0,16):
+            input_circ = Circle(radius=0.15,color=WHITE,fill_opacity=1).move_to(img.get_center())
+            Inputs.add(input_circ)
+        
+        self.add(Inputs)
         self.play(
-            pixel_grid.animate.set_height(input_layer_neurons.get_height())
-            .move_to(input_layer_neurons).set_opacity(0),
-            run_time=1.5
+            AnimationGroup(
+                Inputs[i].animate.move_to(input_layer_neurons[i].get_center())
+                for i in range(16)
+            ),
+            lag_ratio = 0.15
         )
+        self.play(FadeOut(Inputs))
+
 
         input_activations = image_for_vis.flatten().numpy()
         self.play(network.activate_layer(0, activations=input_activations))

@@ -19,7 +19,7 @@ Manimには２つのバージョンが存在し、一般的にManim Community Ed
 
 Manimは内部でLaTeXやffmpegを使用するため、別途インストールが必要。インストールの際は[こちらの記事](https://meta-perceptio.vercel.app/pages/manim.html)が参考になる。
 
----
+
 
 ## Manim CE(v0.19.0)による深層学習の可視化
 
@@ -33,6 +33,8 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
     - ニューロンの数や層数はリストを渡すことで決定できる。`nn = NeuralNetworkMobject([5, 20, 14, 8])`
   
     [![Preview](https://img.youtube.com/vi/Oq9hD7kGuLg/0.jpg)](https://youtu.be/Oq9hD7kGuLg)
+
+    [![Example](https://img.youtube.com/vi/tScQWCbhq_M/0.jpg)](https://youtu.be/tScQWCbhq_M)
 
 2. Convolution.py (開発済み)(名前未定)
     - 主にCNNを可視化するためのプログラム
