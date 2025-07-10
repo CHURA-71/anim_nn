@@ -1,5 +1,3 @@
-# PixelsAsSquare.py
-
 from manim import *
 import numpy as np
 from sklearn.datasets import fetch_openml
