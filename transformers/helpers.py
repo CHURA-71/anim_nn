@@ -338,7 +338,7 @@ def get_vector_pair(angle_in_degrees=90, length=1.0, colors=(BLUE, BLUE)):
     label = Tex(Rf"180^\circ", font_size=24)
     num = label.make_number_changeable("180")
     num.set_value(angle_in_degrees)
-    label.next_to(arc.pfp(0.5), normalize(arc.pfp(0.5)), buff=SMALL_BUFF)
+    label.next_to(arc.point_from_proportion(0.5), normalize(arc.point_from_proportion(0.5)), buff=SMALL_BUFF)
 
     return VGroup(v1, v2, arc, label)
 
@@ -655,8 +655,246 @@ class RandomizeMatrixEntries(Animation):
 class AbstractEmbeddingSequence(MobjectMatrix):
     pass
 
+class TaperedNeedle(Polygon):
+    def __init__(self, length=1, width=5, **kwargs):
+        # 針の形状を定義する3つの頂点
+        points = [
+            [0, width / 2, 0],
+            [length, 0, 0],
+            [0, -width / 2, 0],
+        ]
+        # Polygonとして初期化
+        super().__init__(*points, **kwargs)
+        # ストロークは使わず、塗りで色を表現する
+        self.set_stroke(width=0)
+        self.set_fill(opacity=1.0)
 
-class Dial(VGroup):
+# class Dial(VGroup):
+#     def __init__(
+#         self,
+#         radius=0.5,
+#         relative_tick_size=0.2,
+#         value_range=(0, 1, 0.1),
+#         initial_value=0,
+#         arc_angle=270 * DEGREES,
+#         stroke_width=2,
+#         stroke_color=WHITE,
+#         needle_color=BLUE,
+#         needle_stroke_width=5.0,
+#         value_to_color_config=dict(),
+#         set_anim_streak_color=TEAL,
+#         set_anim_streak_width=4,
+#         set_value_anim_streak_density=6,
+#         **kwargs
+#     ):
+#         super().__init__(**kwargs)
+#         self.value_range = value_range
+#         self.value_to_color_config = value_to_color_config
+#         self.set_anim_streak_color = set_anim_streak_color
+#         self.set_anim_streak_width = set_anim_streak_width
+#         self.set_value_anim_streak_density = set_value_anim_streak_density
+
+#         # Main dial
+#         self.arc = Arc(arc_angle / 2, -arc_angle, radius=radius)
+#         self.arc.rotate(90 * DEGREES, about_point=ORIGIN)
+
+#         low, high, step = value_range
+#         n_values = int(1 + (high - low) / step)
+#         tick_points = map(self.arc.pfp, np.linspace(0, 1, n_values))
+#         self.ticks = VGroup(*(
+#             Line((1.0 - relative_tick_size) * point, point)
+#             for point in tick_points
+#         ))
+#         self.bottom_point = VectorizedPoint(radius * DOWN)
+#         for mob in self.arc, self.ticks:
+#             mob.set_stroke(stroke_color, stroke_width)
+
+#         self.add(self.arc, self.ticks, self.bottom_point)
+
+#         # Needle
+#         self.needle = Line()
+#         self.needle.set_stroke(
+#             color=needle_color,
+#             width=[needle_stroke_width, 0]
+#         )
+#         self.add(self.needle)
+
+#         # Initialize
+#         self.set_value(initial_value)
+
+#     def value_to_point(self, value):
+#         low, high, step = self.value_range
+#         alpha = inverse_interpolate(low, high, value)
+#         return self.arc.pfp(alpha)
+
+#     def set_value(self, value):
+#         self.needle.put_start_and_end_on(
+#             self.get_center(),
+#             self.value_to_point(value)
+#         )
+#         self.needle.set_color(value_to_color(
+#             value,
+#             min_value=self.value_range[0],
+#             max_value=self.value_range[1],
+#             **self.value_to_color_config
+#         ))
+
+#     def animate_set_value(self, value, **kwargs):
+#         kwargs.pop("path_arc", None)
+#         center = self.get_center()
+#         points = [self.needle.get_end(), self.value_to_point(value)]
+#         vects = [point - center for point in points]
+#         angle1, angle2 = [
+#             (angle_of_vector(vect) + TAU / 4) % TAU - TAU / 4
+#             for vect in vects
+#         ]
+#         path_arc = angle2 - angle1
+
+#         density = self.set_value_anim_streak_density
+#         radii = np.linspace(0, 0.5 * self.get_width(), density + 1)[1:]
+#         diff_arcs = VGroup(*(
+#             Arc(
+#                 angle1, angle2 - angle1,
+#                 radius=radius,
+#                 arc_center=center,
+#             )
+#             for radius in radii
+#         ))
+#         diff_arcs.set_stroke(self.set_anim_streak_color, self.set_anim_streak_width)
+
+#         return AnimationGroup(
+#             self.animate.set_value(value).set_anim_args(path_arc=path_arc, **kwargs),
+#             *(
+#                 ShowPassingFlash(diff_arc, time_width=1.5, **kwargs)
+#                 for diff_arc in diff_arcs
+#             )
+#         )
+
+#     def get_random_value(self):
+#         low, high, step = self.value_range
+#         return interpolate(low, high, random.random())
+
+
+
+# class Dial(VGroup):これが一番惜しい
+#     def __init__(
+#         self,
+#         radius=0.5,
+#         relative_tick_size=0.2,
+#         value_range=(0, 1, 0.1),
+#         initial_value=0,
+#         arc_angle=270 * DEGREES,
+#         stroke_width=2,
+#         stroke_color=WHITE,
+#         needle_color=BLUE,
+#         needle_stroke_width=5.0,
+#         value_to_color_config=dict(),
+#         set_anim_streak_color=TEAL,
+#         set_anim_streak_width=4,
+#         set_value_anim_streak_density=6,
+#         **kwargs
+#     ):
+#         # パラメータの保持（元のコード通り）
+#         super().__init__(**kwargs)
+#         self.value_range = value_range
+#         self.value_to_color_config = value_to_color_config
+#         self.set_anim_streak_color = set_anim_streak_color
+#         self.set_anim_streak_width = set_anim_streak_width
+#         self.set_value_anim_streak_density = set_value_anim_streak_density
+
+#         # Main dial（元のコード通り）
+#         self.arc = Arc(radius, start_angle=arc_angle / 2, angle=-arc_angle)
+#         self.arc.rotate(90 * DEGREES, about_point=ORIGIN)
+
+#         low, high, step = value_range
+#         n_values = int(1 + (high - low) / step)
+#         tick_points = map(self.arc.point_from_proportion, np.linspace(0, 1, n_values))
+#         self.ticks = VGroup(*(
+#             Line((1.0 - relative_tick_size) * point, point)
+#             for point in tick_points
+#         ))
+#         self.bottom_point = VectorizedPoint(radius * DOWN)
+#         for mob in self.arc, self.ticks:
+#             mob.set_stroke(stroke_color, stroke_width)
+
+#         # 針（Needle）のポリゴン化
+#         self.needle = TaperedNeedle(
+#             length=radius,
+#             width=needle_stroke_width,
+#             fill_color=needle_color
+#         )
+#         # 針をDialの中心へ移動
+#         self.needle.move_to(self.arc.get_arc_center(), aligned_edge=LEFT)
+        
+#         # オブジェクトの追加（元のコード通り）
+#         self.add(self.arc, self.ticks, self.bottom_point, self.needle)
+
+#         # 初期値を設定
+#         self.set_value(initial_value, animated=False)
+
+#     def value_to_angle(self, value):
+#         # 値を角度に変換するヘルパー関数
+#         low, high, step = self.value_range
+#         alpha = inverse_interpolate(low, high, value)
+#         start_angle = self.arc.start_angle
+#         stop_angle = self.arc.start_angle + self.arc.angle
+#         return interpolate(start_angle, stop_angle, alpha)
+
+#     def set_value(self, value, animated=True):
+#         # 針（Polygon）の角度と色を直接設定する
+#         target_angle = self.value_to_angle(value)
+#         target_color = value_to_color(
+#             value, min_value=self.value_range[0], max_value=self.value_range[1],
+#             **self.value_to_color_config
+#         )
+#         if not animated:
+#             self.needle.set_angle(target_angle)
+#             self.needle.set_fill(target_color)
+#             return
+
+#     def animate_set_value(self, value, **kwargs):
+#         # 針（Polygon）をアニメーションさせる
+#         target_angle = self.value_to_angle(value)
+#         target_color = value_to_color(
+#             value, min_value=self.value_range[0], max_value=self.value_range[1],
+#             **self.value_to_color_config
+#         )
+#         start_angle = self.needle.get_angle()
+#         start_color = self.needle.get_fill_color()
+
+#         def updater(mob, alpha):
+#             angle = interpolate(start_angle, target_angle, alpha)
+#             color = interpolate_color(start_color, target_color, alpha)
+#             mob.set_angle(angle)
+#             mob.set_fill(color)
+            
+        
+#         needle_animation = UpdateFromAlphaFunc(self.needle, updater, **kwargs)
+
+#         # streakエフェクト（元のコードのロジックを角度ベースで再現）
+#         path_arc = target_angle - start_angle
+#         density = self.set_value_anim_streak_density
+#         radii = np.linspace(0, 0.5 * self.width, density + 1)[1:]
+#         diff_arcs = VGroup(*(
+#             Arc(
+#                 radius, start_angle=start_angle, angle=path_arc,
+#                 arc_center=self.arc.get_arc_center()
+#             )
+#             for radius in radii
+#         ))
+#         diff_arcs.set_stroke(self.set_anim_streak_color, self.set_anim_streak_width)
+#         streak_animation = AnimationGroup(*(
+#             ShowPassingFlash(diff_arc, time_width=1.5, **kwargs)
+#             for diff_arc in diff_arcs
+#         ))
+
+#         return AnimationGroup(needle_animation, streak_animation)
+
+#     def get_random_value(self):
+#         low, high, step = self.value_range
+#         return interpolate(low, high, random.random())
+
+class Dial(VGroup):バージョン3全然ダメ
     def __init__(
         self,
         radius=0.5,
@@ -682,7 +920,7 @@ class Dial(VGroup):
         self.set_value_anim_streak_density = set_value_anim_streak_density
 
         # Main dial
-        self.arc = Arc(radius, arc_angle / 2, -arc_angle)
+        self.arc = Arc(start_angle=arc_angle / 2, angle=-arc_angle, radius=radius)
         self.arc.rotate(90 * DEGREES, about_point=ORIGIN)
 
         low, high, step = value_range
@@ -698,15 +936,25 @@ class Dial(VGroup):
 
         self.add(self.arc, self.ticks, self.bottom_point)
 
-        # Needle
-        self.needle = Line()
-        self.needle.set_stroke(
-            color=needle_color,
-            width=[needle_stroke_width, 0]
+        # 変更点: ダイヤルの中心を保存
+        self.dial_center = self.get_center()
+
+        # 変更点: NeedleをLineからTaperedNeedleに置き換え
+        self.needle = TaperedNeedle(
+            length=radius,
+            # Lineのstroke_widthとPolygonの座標系はスケールが違うため調整
+            width=needle_stroke_width * 0.01,
+            fill_color=needle_color
         )
+        # 変更点: 針の基点をダイヤルの中心に移動
+        self.needle.shift(self.dial_center)
         self.add(self.needle)
 
+
         # Initialize
+        # 変更点: 針の現在の角度を追跡するための変数を追加
+        # TaperedNeedleはX軸正方向(角度0)で生成される
+        self.current_angle = 0
         self.set_value(initial_value)
 
     def value_to_point(self, value):
@@ -714,22 +962,41 @@ class Dial(VGroup):
         alpha = inverse_interpolate(low, high, value)
         return self.arc.point_from_proportion(alpha)
 
+    # 変更点: Polygonを制御するためにset_valueメソッドを全面的に書き換え
     def set_value(self, value):
-        self.needle.put_start_and_end_on(
-            self.get_center(),
-            self.value_to_point(value)
+        # 目標地点から回転すべき角度を計算
+        target_point = self.value_to_point(value)
+        target_vector = target_point - self.dial_center
+        angle = angle_of_vector(target_vector)
+
+        # 針をダイヤル中心を軸として回転
+        self.needle.rotate(
+            angle - self.current_angle,
+            about_point=self.dial_center
         )
-        self.needle.set_color(value_to_color(
+        # 現在の角度を更新
+        self.current_angle = angle
+
+        # 針の色を更新 (set_colorからset_fillに変更)
+        new_color = value_to_color(
             value,
             min_value=self.value_range[0],
             max_value=self.value_range[1],
             **self.value_to_color_config
-        ))
+        )
+        self.needle.set_fill(new_color, opacity=1.0)
 
     def animate_set_value(self, value, **kwargs):
         kwargs.pop("path_arc", None)
-        center = self.get_center()
-        points = [self.needle.get_end(), self.value_to_point(value)]
+        # 変更点: self.get_center() の代わりに保存したダイヤル中心を使用
+        center = self.dial_center
+
+        # 変更点: 針の先端位置を get_end() の代わりに get_points()[1] で取得
+        # TaperedNeedleの2番目の頂点が先端に対応
+        current_tip = self.needle.get_points()[1]
+        target_tip = self.value_to_point(value)
+        points = [current_tip, target_tip]
+
         vects = [point - center for point in points]
         angle1, angle2 = [
             (angle_of_vector(vect) + TAU / 4) % TAU - TAU / 4
@@ -741,17 +1008,17 @@ class Dial(VGroup):
         radii = np.linspace(0, 0.5 * self.get_width(), density + 1)[1:]
         diff_arcs = VGroup(*(
             Arc(
-                radius,
+                r,
                 angle1,
                 angle2 - angle1,
                 arc_center=center,
             )
-            for radius in radii
+            for r in radii
         ))
         diff_arcs.set_stroke(self.set_anim_streak_color, self.set_anim_streak_width)
 
         return AnimationGroup(
-            self.needle.animate(path_arc=path_arc, **kwargs).set_value(value),
+            self.animate(path_arc=path_arc, **kwargs).set_value(value),
             *(
                 ShowPassingFlash(diff_arc, time_width=1.5, **kwargs)
                 for diff_arc in diff_arcs
@@ -762,11 +1029,10 @@ class Dial(VGroup):
         low, high, step = self.value_range
         return interpolate(low, high, random.random())
 
-
 class MachineWithDials(VGroup):
     default_dial_config = dict(
         stroke_width=1.0,
-        needle_stroke_width=5.0,
+        needle_stroke_width=0.1,
         relative_tick_size=0.25,
         set_anim_streak_width=2,
     )
@@ -793,7 +1059,7 @@ class MachineWithDials(VGroup):
         dial_config = dict(**self.default_dial_config, **dial_config)
         # dials = Dial(**dial_config).get_grid(n_rows, n_cols, buff_ratio=dial_buff_ratio)
         dials = VGroup(*[Dial(**dial_config) for _ in range(n_rows * n_cols)])
-        buff = dials[0].get_width() * dial_buff_ratio
+        buff = dials[0].width * dial_buff_ratio
         dials.arrange_in_grid(n_rows, n_cols, buff=buff)
         dials.set_width(box.get_width()*0.95)
         # dials.set_width(box.get_width() - buff)
@@ -825,6 +1091,17 @@ class MachineWithDials(VGroup):
             ),
             lag_ratio=lag_factor / len(self.dials)
         )
+    # def rotate_all_dials(self, run_time=2, lag_factor=1.0):
+    #     shuffled_dials = list(self.dials)
+    #     random.shuffle(shuffled_dials)
+    #     return LaggedStart(
+    #         *(
+    #             Rotate(dial.needle, TAU) # about_pointは不要
+    #             for dial in shuffled_dials
+    #         ),
+    #         lag_ratio=lag_factor / len(self.dials)
+    #     )
+
     
 class MachineScene(Scene):
     def construct(self):
