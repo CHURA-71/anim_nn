@@ -253,6 +253,88 @@ class NeuralNetworkMobject(VGroup):
             anim_fill = self.neuron_layers.animate.set_fill(self.neuron_fill_color, opacity=1)
             return AnimationGroup(neuron_anim, anim_fill, **animation_kwargs)
 
+
+# ----------------------------------------------------------------------------
+# ニューラルネットワーク Mobject クラス(Model対応)
+# ----------------------------------------------------------------------------
+class NeuralNetworkWithActivation(NeuralNetworkMobject):
+    """
+    NeuralNetworkMobjectを継承し、モデルの実際の活性化に基づいて
+    ニューロンの発火を可視化する機能を追加したクラス。
+    """
+    def __init__(self, layer_sizes, **kwargs):
+        # 親クラスの__init__を呼び出し、ネットワークの基本的な構造を構築する
+        super().__init__(layer_sizes, **kwargs)
+
+    def activate_layer(self, layer_index, activations=None, animation_kwargs=None):
+        """
+        指定された層をハイライトするアニメーションを返す。(オーバーライド)
+        activationsが与えられた場合、その値に応じてニューロンの色を変化させる。
+        """
+        if animation_kwargs is None: animation_kwargs = {}
+        
+        layer_neurons = self._neuron_mobjects_list[layer_index]
+        animations = []
+
+        if activations is not None:
+            # アクティベーションを正規化 (0以上で最大値が1になるように)
+            activations_flat = activations.flatten()
+            max_val = activations_flat.max().item() 
+            activations_norm = activations_flat / (max_val + 1e-6) # ゼロ除算を防止
+            
+            
+            for i, neuron in enumerate(layer_neurons):
+                if i < len(activations_norm):
+                    # alpha値（色の混合率）を計算
+                    alpha = np.clip(activations_norm[i].item(), 0, 1)
+                    # 黒 (非発火) から指定色 (最大発火) へ補間
+                    new_color = interpolate_color(self.neuron_fill_color, self.activation_color, alpha)
+                    # フィルカラーのみを変化させる
+                    animations.append(neuron.animate(**animation_kwargs).set_fill(color=new_color, opacity=1))
+        else:
+            # activationsがなければ、層全体を単色でハイライトする
+            # 親クラスとは異なり、フィルカラーのみを変更する
+            animations = [
+                neuron.animate(**animation_kwargs).set_fill(self.activation_color, opacity=1)
+                for neuron in layer_neurons
+            ]
+        
+        return AnimationGroup(*animations, lag_ratio=0)
+
+    def forward_pass_animation(self, model, input_tensor, animation_kwargs=None):
+        """
+        順伝播のアニメーションを生成する。(オーバーライド)
+        PyTorchモデルと入力テンソルを受け取り、各層の活性化を視覚化する。
+        """
+        if animation_kwargs is None: animation_kwargs = {"run_time": 0.4}
+
+        # モデルを実行して中間層の活性化リストを取得する
+        # (モデル側にactivationsを保存するフックなどの実装が前提)
+        output = model(input_tensor.unsqueeze(0))
+        activations_list = model.activations
+        
+        animations = []
+        # 入力層の活性化
+        # 入力自体を最初の活性化と見なす
+        animations.append(self.activate_layer(0, activations=input_tensor, animation_kwargs=animation_kwargs))
+        
+        for i in range(len(self.edge_layers)):
+            edge_flash = ShowPassingFlash(
+                self.edge_layers[i].copy().set_stroke(color=self.activation_color, width=self.edge_stroke_width * 1.5),
+                time_width=0.4, run_time=animation_kwargs.get("run_time", 0.4)
+            )
+            # 次の層を、モデルから得た活性化情報でハイライト
+            neuron_activation = self.activate_layer(i + 1, activations=activations_list[i], animation_kwargs=animation_kwargs)
+            # 前の層を非アクティブ化（親クラスのdeactivate_layerメソッドを利用）
+            neuron_deactivation = self.deactivate_layer(i, animation_kwargs=animation_kwargs)
+            
+            animations.append(AnimationGroup(edge_flash, neuron_activation, neuron_deactivation))
+
+        # 最終層を非アクティブ化
+        animations.append(self.deactivate_layer(len(self.layer_sizes) - 1, animation_kwargs=animation_kwargs))
+        
+        return Succession(*animations, lag_ratio=0.8)
+
 # ----------------------------------------------------------------------------
 # テスト用アニメーションシーン
 # ----------------------------------------------------------------------------
