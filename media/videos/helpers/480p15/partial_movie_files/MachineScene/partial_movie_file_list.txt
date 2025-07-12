@@ -1,0 +1,7 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/MachineScene/1185818338_3606865877_3365862044.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/MachineScene/624642324_667144672_449510232.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/MachineScene/624642324_699053819_1102647616.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/MachineScene/624642324_667144672_339055912.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/MachineScene/624642324_3238110618_684328526.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/MachineScene/624642324_667144672_4226271349.mp4'

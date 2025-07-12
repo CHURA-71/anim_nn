@@ -462,7 +462,7 @@ class LabeledArrow(Arrow):
             start, end = self.get_start_and_end()
             label = Text(label_text, font_size=font_size)
             label.set_fill(self.get_color())
-            label.set_backstroke()
+            label.set_background_stroke()
             label.rotate(label_rotation, RIGHT)
             if direction is None:
                 direction = normalize(end - start)
@@ -472,56 +472,192 @@ class LabeledArrow(Arrow):
             self.label = None
 
 
-class WeightMatrix(DecimalMatrix):
+# class WeightMatrix(DecimalMatrix):
+#     def __init__(
+#         self,
+#         values: Optional[np.ndarray] = None,
+#         shape: tuple[int, int] = (6, 8),
+#         value_range: tuple[float, float] = (-9.9, 9.9),
+#         ellipses_row: Optional[int] = -2,
+#         ellipses_col: Optional[int] = -2,
+#         num_decimal_places: int = 1,
+#         bracket_h_buff: float = 0.1,
+#         decimal_config=dict(include_sign=True),
+#         low_positive_color: ManimColor = BLUE_E,
+#         high_positive_color: ManimColor = BLUE_B,
+#         low_negative_color: ManimColor = RED_E,
+#         high_negative_color: ManimColor = RED_B,
+#     ):
+#         if values is not None:
+#             shape = values.shape
+#         self.shape = shape
+#         self.value_range = value_range
+#         self.low_positive_color = low_positive_color
+#         self.high_positive_color = high_positive_color
+#         self.low_negative_color = low_negative_color
+#         self.high_negative_color = high_negative_color
+#         self.ellipses_row = ellipses_row
+#         self.ellipses_col = ellipses_col
+
+#         if values is None:
+#             values = np.random.uniform(*self.value_range, size=shape)
+
+#         super().__init__(
+#             values,
+#             num_decimal_places=num_decimal_places,
+#             bracket_h_buff=bracket_h_buff,
+#             decimal_config=decimal_config,
+#             ellipses_row=ellipses_row,
+#             ellipses_col=ellipses_col,
+#         )
+#         self.reset_entry_colors()
+
+#     def reset_entry_colors(self):
+#         for entry in self.get_entries():
+#             entry.set_fill(color=value_to_color(
+#                 entry.get_value(),
+#                 self.low_positive_color,
+#                 self.high_positive_color,
+#                 self.low_negative_color,
+#                 self.high_negative_color,
+#                 0, max(self.value_range),
+#             ))
+#         return self
+
+
+# class NumericEmbedding(WeightMatrix):
+#     def __init__(
+#         self,
+#         values: Optional[np.ndarray] = None,
+#         shape: Optional[tuple[int, int]] = None,
+#         length: int = 7,
+#         num_decimal_places: int = 1,
+#         ellipses_row: int = -2,
+#         ellipses_col: int = -2,
+#         value_range: tuple[float, float] = (-9.9, 9.9),
+#         bracket_h_buff: float = 0.1,
+#         decimal_config=dict(include_sign=True),
+#         dark_color: ManimColor = GREY_C,
+#         light_color: ManimColor = WHITE,
+#         **kwargs,
+#     ):
+#         if values is not None:
+#             if len(values.shape) == 1:
+#                 values = values.reshape((values.shape[0], 1))
+#             shape = values.shape
+#         if shape is None:
+#             shape = (length, 1)
+#         super().__init__(
+#             values,
+#             shape=shape,
+#             value_range=value_range,
+#             num_decimal_places=num_decimal_places,
+#             bracket_h_buff=bracket_h_buff,
+#             decimal_config=decimal_config,
+#             low_positive_color=dark_color,
+#             high_positive_color=light_color,
+#             low_negative_color=dark_color,
+#             high_negative_color=light_color,
+#             ellipses_row=ellipses_row,
+#             ellipses_col=ellipses_col,
+#             **kwargs,
+#         )
+
+#         # No sign on zeros
+#         for entry in self.get_entries():
+#             if entry.get_value() == 0:
+#                 entry[0].set_opacity(0)
+
+
+class WeightMatrix(Matrix):
     def __init__(
         self,
         values: Optional[np.ndarray] = None,
         shape: tuple[int, int] = (6, 8),
         value_range: tuple[float, float] = (-9.9, 9.9),
-        ellipses_row: Optional[int] = -2,
-        ellipses_col: Optional[int] = -2,
+        ellipses_row: Optional[int] = None,
+        ellipses_col: Optional[int] = None,
         num_decimal_places: int = 1,
-        bracket_h_buff: float = 0.1,
-        decimal_config=dict(include_sign=True),
+        include_sign: bool = True,
         low_positive_color: ManimColor = BLUE_E,
         high_positive_color: ManimColor = BLUE_B,
         low_negative_color: ManimColor = RED_E,
         high_negative_color: ManimColor = RED_B,
+        **kwargs,
     ):
-        if values is not None:
-            shape = values.shape
-        self.shape = shape
+        # 1. valuesがなければshapeからランダムな行列を生成
+        if values is None:
+            values = np.random.uniform(*value_range, size=shape)
+
+        # 2. 必要な値をインスタンス変数として保存
+        self.values = values
         self.value_range = value_range
         self.low_positive_color = low_positive_color
         self.high_positive_color = high_positive_color
         self.low_negative_color = low_negative_color
         self.high_negative_color = high_negative_color
-        self.ellipses_row = ellipses_row
-        self.ellipses_col = ellipses_col
 
-        if values is None:
-            values = np.random.uniform(*self.value_range, size=shape)
+        # 3. 行列の要素(Mobject)のリストを手動で構築
+        matrix_entries = []
+        rows, cols = self.values.shape
+        
+        # 負のインデックスを正に変換
+        if ellipses_row is not None and ellipses_row < 0:
+            ellipses_row += rows
+        if ellipses_col is not None and ellipses_col < 0:
+            ellipses_col += cols
+            
+        # for r in range(rows):
+        #     row_entries = []
+        #     for c in range(cols):
+        #         if r == ellipses_row:
+        #             entry = MathTex("\\vdots")
+        #         elif c == ellipses_col:
+        #             entry = MathTex("\\dots")
+        #         else:
+        #             # ここでnum_decimal_placesなどを直接指定してインスタンス化
+        #             entry = DecimalNumber(
+        #                 self.values[r, c],
+        #                 num_decimal_places=num_decimal_places,
+        #                 include_sign=include_sign
+        #             )
+        #         row_entries.append(entry)
+        #     matrix_entries.append(row_entries)
+        for r in range(rows):
+            row_entries = []
+            for c in range(cols):
+                if r == ellipses_row:
+                    # 文字列として渡す
+                    entry = "\\vdots"
+                elif c == ellipses_col:
+                    # 文字列として渡す
+                    entry = "\\dots"
+                else:
+                    # 数値(float)として渡す
+                    entry = self.values[r, c]
+                row_entries.append(entry)
+            matrix_entries.append(row_entries)
 
-        super().__init__(
-            values,
-            num_decimal_places=num_decimal_places,
-            bracket_h_buff=bracket_h_buff,
-            decimal_config=decimal_config,
-            ellipses_row=ellipses_row,
-            ellipses_col=ellipses_col,
-        )
-        self.reset_entry_colors()
+        # 4. 構築済みのMobjectリストを使って親クラスを初期化
+        super().__init__(matrix_entries, **kwargs)
 
-    def reset_entry_colors(self):
-        for entry in self.get_entries():
-            entry.set_fill(color=value_to_color(
-                entry.get_value(),
-                self.low_positive_color,
-                self.high_positive_color,
-                self.low_negative_color,
-                self.high_negative_color,
-                0, max(self.value_range),
-            ))
+        # 5. 色を設定
+        self._set_entry_colors()
+
+    def _set_entry_colors(self):
+        min_val, max_val = self.value_range[0], self.value_range[1]
+        num_cols = self.values.shape[1]
+        for i, entry in enumerate(self.get_entries()):
+            if isinstance(entry, DecimalNumber):
+                r_idx, c_idx = i // num_cols, i % num_cols
+                val = self.values[r_idx, c_idx]
+                color = value_to_color(
+                    val,
+                    self.low_positive_color, self.high_positive_color,
+                    self.low_negative_color, self.high_negative_color,
+                    min_val, max_val
+                )
+                entry.set_color(color)
         return self
 
 
@@ -529,45 +665,39 @@ class NumericEmbedding(WeightMatrix):
     def __init__(
         self,
         values: Optional[np.ndarray] = None,
-        shape: Optional[tuple[int, int]] = None,
         length: int = 7,
-        num_decimal_places: int = 1,
-        ellipses_row: int = -2,
-        ellipses_col: int = -2,
-        value_range: tuple[float, float] = (-9.9, 9.9),
-        bracket_h_buff: float = 0.1,
-        decimal_config=dict(include_sign=True),
+        ellipses_row: Optional[int] = -2, # Pythonの負のインデックスを利用
         dark_color: ManimColor = GREY_C,
         light_color: ManimColor = WHITE,
         **kwargs,
     ):
-        if values is not None:
-            if len(values.shape) == 1:
-                values = values.reshape((values.shape[0], 1))
-            shape = values.shape
-        if shape is None:
-            shape = (length, 1)
+        if values is None:
+            values = np.random.uniform(-9.9, 9.9, size=(length, 1))
+
+        if len(values.shape) == 1:
+            values = values.reshape((values.shape[0], 1))
+        
+        shape = values.shape
+
+        # Pythonの負インデックスを正のインデックスに変換
+        if ellipses_row is not None and ellipses_row < 0:
+            ellipses_row += shape[0]
+
         super().__init__(
-            values,
-            shape=shape,
-            value_range=value_range,
-            num_decimal_places=num_decimal_places,
-            bracket_h_buff=bracket_h_buff,
-            decimal_config=decimal_config,
+            values=values,
             low_positive_color=dark_color,
             high_positive_color=light_color,
             low_negative_color=dark_color,
             high_negative_color=light_color,
             ellipses_row=ellipses_row,
-            ellipses_col=ellipses_col,
             **kwargs,
         )
 
-        # No sign on zeros
+        # 値が0のエントリの符号(+)を非表示にする
         for entry in self.get_entries():
-            if entry.get_value() == 0:
+            if isinstance(entry, DecimalNumber) and np.isclose(entry.get_value(), 0):
+                # include_sign=Trueで生成されたDecimalNumberの最初の要素が符号
                 entry[0].set_opacity(0)
-
 
 class EmbeddingArray(VGroup):
     def __init__(
@@ -777,7 +907,7 @@ class Dial(VGroup):
         ))
         diff_arcs.set_stroke(self.set_anim_streak_color, self.set_anim_streak_width)
 
-        self.needle.set_angle(target_angle)
+        self.needle.set_angle(targe)
 
         return AnimationGroup(
             Rotate(self.needle, path_arc, about_point=self.arc.get_arc_center()),
@@ -827,7 +957,7 @@ class MachineWithDials(VGroup):
         dials.move_to(box)
         for dial in dials:
             dial.set_value(dial.get_random_value())
-            dial.needle.rotate(dial.needle.angle,about_point=dial.arc.get_arc_center())
+            dial.needle.rotate(dial.needle.angle,about_point=dial.get_center())
         self.dials = dials
 
         self.add(box, dials)
@@ -853,18 +983,38 @@ class MachineWithDials(VGroup):
             lag_ratio=lag_factor / len(self.dials)
         )
 
-    
+
+class TestScene(Scene):
+    def construct(self):
+        # 2行目と3列目を省略記号にする
+        w_matrix = WeightMatrix(
+            shape=(5, 6),
+            ellipses_row=2,
+            ellipses_col=3
+        )
+        
+        # 下から2番目の行を省略記号にする
+        n_embedding = NumericEmbedding(length=8, ellipses_row=-2)
+        
+        # タイトルを追加
+        title1 = Title("WeightMatrix Example")
+        title2 = Title("NumericEmbedding Example")
+        
+        VGroup(title1, w_matrix).arrange(DOWN)
+        VGroup(title2, n_embedding).arrange(DOWN)
+        
+        group = VGroup(
+            VGroup(title1, w_matrix),
+            VGroup(title2, n_embedding)
+        ).arrange(RIGHT, buff=1.5).scale_to_fit_width(config.frame_width)
+        
+        self.play(Create(group))
+        self.wait(2)
+
 class MachineScene(Scene):
-    """
-    MachineWithDialsのデバッグシーン（完了）
-    """
     def construct(self):
         dial = MachineWithDials()
         self.add(dial)
         self.play(dial.random_change_animation())
         self.wait()
         self.play(dial.random_change_animation())
-        self.wait()
-        self.play(dial.rotate_all_dials())
-        self.wait()
-
