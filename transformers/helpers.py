@@ -396,14 +396,20 @@ class NeuralNetwork(VGroup):
                 dot.set_fill(WHITE, random.random())
         return self
 
+#kここまでデバッグ済み
 
-class ContextAnimation(LaggedStart):
+def random_bright_color_morewhite() -> ManimColor:
+            # random_bright_colorをよりも白に比重を置く
+            curr_rgb = color_to_rgb(random_color())
+            new_rgb = 0.25 * curr_rgb + 0.75 * np.ones(3)
+            return ManimColor(new_rgb)
+
+class ContextAnimation(AnimationGroup):
     def __init__(
         self,
         target,
         sources,
         direction=UP,
-        hue_range=(0.1, 0.3),
         time_width=2,
         min_stroke_width=0,
         max_stroke_width=5,
@@ -417,35 +423,40 @@ class ContextAnimation(LaggedStart):
         arcs = VGroup()
         if strengths is None:
             strengths = np.random.random(len(sources))**2
+
         for source, strength in zip(sources, strengths):
             sign = direction[1] * (-1)**int(source.get_x() < target.get_x())
-            arcs.add(Line(
+            arc = ArcBetweenPoints(
                 source.get_edge_center(direction),
                 target.get_edge_center(direction),
-                path_arc=sign * path_arc,
-                stroke_color=random_bright_color(hue_range=hue_range),
+                angle=sign * path_arc,
+                stroke_color=random_bright_color_morewhite(),
                 stroke_width=interpolate(
                     min_stroke_width,
                     max_stroke_width,
-                    strength,
-                )
-            ))
+                    strength
+                ),
+            )
+            arcs.add(arc)
+
         if fix_in_frame:
             arcs.fix_in_frame()
+
         arcs.shuffle()
         lag_ratio = 0.5 / len(arcs) if lag_ratio is None else lag_ratio
 
         super().__init__(
-            *(
+            *[
                 ShowPassingFlash(arc, time_width=time_width)
                 for arc in arcs
-            ),
+            ],
             lag_ratio=lag_ratio,
             run_time=run_time,
             **kwargs,
         )
 
-#kここまでデバッグ済み
+
+
 class LabeledArrow(Arrow):
     """
     矢印の終点にテキストラベルが付いたArrowクラス。
@@ -978,6 +989,16 @@ class MachineWithDials(VGroup):
 
 
 # テスト用シーン
+class ContextAnimTest(Scene):
+    def construct(self):
+        target = Dot(RIGHT * 3)
+        sources = VGroup(*[Dot(LEFT * 3 + UP * i) for i in range(-2, 3)])
+
+        self.add(target, *sources)
+        self.play(ContextAnimation(target, sources, run_time=2))
+        self.wait()
+        self.play(ContextAnimation(target, sources, run_time=2))
+
 class LabeledArrowTest(ThreeDScene):
     def construct(self):
         # 3Dの座標軸とカメラの初期設定
