@@ -445,8 +445,29 @@ class ContextAnimation(LaggedStart):
             **kwargs,
         )
 
-
+#kここまでデバッグ済み
 class LabeledArrow(Arrow):
+    """
+    矢印の終点にテキストラベルが付いたArrowクラス。
+
+    Parameters
+    ----------
+    args
+        Arrowクラスに渡される引数 (始点、終点など)。
+    label_text
+        矢印に表示するテキスト。
+    font_size
+        ラベルのフォントサイズ。
+    label_buff
+        矢印の終点からラベルまでの距離（バッファ）。
+    direction
+        矢印の終点から見て、どの方向にラベルを配置するかを指定するベクトル。
+        指定しない場合は、矢印自体の向きが使われます。
+    label_rotation
+        ラベルの回転角度。
+    kwargs
+        Arrowクラスに渡されるその他のキーワード引数。
+    """
     def __init__(
         self,
         *args,
@@ -457,16 +478,17 @@ class LabeledArrow(Arrow):
         label_rotation: float = PI / 2,
         **kwargs
     ):
-        super().__init__(*args, **kwargs)
+        buff_value = kwargs.pop('buff', 0)
+        super().__init__(*args, buff=buff_value,**kwargs)
         if label_text is not None:
             start, end = self.get_start_and_end()
             label = Text(label_text, font_size=font_size)
             label.set_fill(self.get_color())
             label.set_background_stroke()
-            label.rotate(label_rotation, RIGHT)
+            label.rotate(label_rotation, RIGHT)            
             if direction is None:
-                direction = normalize(end - start)
-            label.next_to(end, direction, buff=label_buff)
+                direction = normalize(end-start)
+            label.next_to(self.get_end(), direction, buff=label_buff)
             self.label = label
         else:
             self.label = None
@@ -489,12 +511,9 @@ class WeightMatrix(Matrix):
         ellipses_col: Optional[int] = -2,
         **kwargs,
     ):
-        # 1. valuesがなければshapeからランダムな行列を生成
-        if values is None:
-            values = np.random.uniform(*value_range, size=shape)
-
-        # 2. 必要な値をインスタンス変数として保存
-        self.values = values
+        if values is not None:
+            shape = values.shape
+        self.shape = shape
         self.value_range = value_range
         self.low_positive_color = low_positive_color
         self.high_positive_color = high_positive_color
@@ -583,8 +602,14 @@ class NumericEmbedding(WeightMatrix):
     def __init__(
         self,
         values: Optional[np.ndarray] = None,
+        shape: Optional[tuple[int, int]] = None,
         length: int = 7,
-        ellipses_row: Optional[int] = -2, # Pythonの負のインデックスを利用
+        num_decimal_places: int = 1,
+        ellipses_row: int = -2,
+        ellipses_col: int = -2,
+        value_range: tuple[float, float] = (-9.9, 9.9),
+        bracket_h_buff: float = 0.1,
+        decimal_config=dict(include_sign=True),
         dark_color: ManimColor = GREY_C,
         light_color: ManimColor = WHITE,
         **kwargs,
@@ -609,6 +634,7 @@ class NumericEmbedding(WeightMatrix):
             low_negative_color=dark_color,
             high_negative_color=light_color,
             ellipses_row=ellipses_row,
+            ellipses_col=ellipses_col,
             **kwargs,
         )
 
@@ -618,6 +644,7 @@ class NumericEmbedding(WeightMatrix):
                 # 数値部分の [0] は "-" に相当するパーツ
                 if len(entry) > 0:
                     entry[0].set_opacity(0)
+
 
 class EmbeddingArray(VGroup):
     def __init__(
@@ -720,6 +747,33 @@ class RandomizeMatrixEntries(Animation):
                 entry.set_value(interpolate(start, target, sub_alpha))
 
         self.matrix.reset_entry_colors()
+
+class AbstractEmbeddingSequence(MobjectMatrix):
+    pass
+
+class Needle(Polygon):
+    def __init__(self, length=1, width=5, **kwargs):
+        # 針の形状を定義する3つの頂点
+        points = [
+            [0, width / 2, 0],
+            [length, 0, 0],
+            [0, -width / 2, 0],
+        ]
+        angle = None
+        # Polygonとして初期化
+        super().__init__(*points, **kwargs)
+        # ストロークは使わず、塗りで色を表現する
+        self.set_stroke(width=0)
+        self.set_fill(opacity=1.0)
+        self.angle = angle
+
+    def get_angle(self):
+        return self.angle
+    
+    def set_angle(self, angle):
+        self.angle = angle
+    
+
 
 class AbstractEmbeddingSequence(MobjectMatrix):
     pass
@@ -922,29 +976,60 @@ class MachineWithDials(VGroup):
             lag_ratio=lag_factor / len(self.dials)
         )
 
-    
+
+# テスト用シーン
+class LabeledArrowTest(ThreeDScene):
+    def construct(self):
+        # 3Dの座標軸とカメラの初期設定
+        axes = ThreeDAxes()
+        self.set_camera_orientation(phi=75 * DEGREES, theta=-45 * DEGREES, zoom=0.8)
+        self.add(axes)
+
+        # 1. X, Y, Z軸に沿った矢印を生成
+        arrow_x = LabeledArrow(ORIGIN, 3 * RIGHT, label_text="X-Axis", color=BLUE)
+        arrow_y = LabeledArrow(ORIGIN, 3 * UP, label_text="Y-Axis", color=GREEN)
+        arrow_z = LabeledArrow(ORIGIN, 3 * OUT, label_text="Z-Axis", color=YELLOW)
+
+        # 2. 矢印とラベルをそれぞれシーンに追加してアニメーション
+        # このクラスはラベルを自動で追加しないため、個別に追加する必要があります。
+        self.play(
+            Create(arrow_x),
+            Create(arrow_y),
+            Create(arrow_z),
+            # ラベルも個別に追加する
+            Write(arrow_x.label),
+            Write(arrow_y.label),
+            Write(arrow_z.label),
+            run_time=2
+        )
+        self.wait(1)
+
+        # 3. カメラを回転させて3Dであることを確認
+        self.move_camera(phi=45 * DEGREES, theta=120 * DEGREES, run_time=3)
+        self.wait(1)
+        self.move_camera(phi=80 * DEGREES, theta=0 * DEGREES, run_time=3)
+        self.wait(1)
+
+
 class MatrixTest(Scene):
     def construct(self):
         Wmob = WeightMatrix()       #デバッグ済み
         self.play(FadeIn(Wmob))
-        self.wait()
+        self.wait(2)
         self.play(FadeOut(Wmob))
         Nmob = NumericEmbedding()   #デバッグ済み
         self.play(FadeIn(Nmob))
-        self.wait()
+        self.wait(2)
         self.play(FadeOut(Nmob))
         Emob = EmbeddingArray()     #デバッグ済み
         self.play(FadeIn(Emob))
-        self.wait()
+        self.wait(2)
         self.play(FadeOut(Emob))
-        mat = WeightMatrix(shape=(4, 4))
+        mat = WeightMatrix(shape=(16, 16)).scale_to_fit_width(config.frame_width*0.7)
         self.add(mat)
-        self.wait(0.5)
-        self.play(RandomizeMatrixEntries(mat, run_time=2, lag_ratio=0.1))   #デバッグ済み
+        self.wait(1)
+        self.play(RandomizeMatrixEntries(mat, run_time=4, lag_ratio=0.1))   #デバッグ済み
         self.wait()
-
-
-
 
 
 class MachineDialTest(Scene):
