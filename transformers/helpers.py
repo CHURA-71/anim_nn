@@ -326,20 +326,28 @@ def get_network_connections(layer1, layer2, max_width=2.0, opacity_exp=1.0):
         for n2 in layer2
     )
 
+#ここまでデバッグ済み
 
 def get_vector_pair(angle_in_degrees=90, length=1.0, colors=(BLUE, BLUE)):
     angle = angle_in_degrees * DEGREES
     v1 = Vector(length * RIGHT)
-    v2 = v1.copy().rotate(angle, about_point=ORIGIN)
+    # v2 = v1.copy().rotate(angle, about_point=ORIGIN)
+    v2_dir = rotate_vector(length*RIGHT,angle)
+    v2 = Vector(v2_dir)
     v1.set_color(colors[0])
     v2.set_color(colors[1])
-    arc = Arc(radius=0.2, angle=angle)
-    arc.set_stroke(WHITE, 2)
-    label = Tex(Rf"180^\circ", font_size=24)
-    num = label.make_number_changeable("180")
-    num.set_value(angle_in_degrees)
-    label.next_to(arc.point_from_proportion(0.5), normalize(arc.point_from_proportion(0.5)), buff=SMALL_BUFF)
-
+    arc = Arc(
+        radius=0.5,
+        angle=angle,
+        color=WHITE,
+        stroke_width=2,
+    )
+    label = MathTex(rf"{angle_in_degrees}^\circ", font_size=24)
+    label.next_to(
+        arc.point_from_proportion(0.5),
+        direction=normalize(arc.point_from_proportion(0.5)),
+        buff=SMALL_BUFF,
+    )
     return VGroup(v1, v2, arc, label)
 
 
@@ -348,32 +356,37 @@ class NeuralNetwork(VGroup):
         self,
         layer_sizes=[6, 12, 6],
         neuron_radius=0.1,
-        v_buff_ratio=1.0,
+        v_buff_ratio=0.2,
         h_buff_ratio=7.0,
         max_stroke_width=2.0,
         stroke_decay=2.0,
+        **kwargs
     ):
+        super().__init__(**kwargs)
         self.max_stroke_width = max_stroke_width
         self.stroke_decay = stroke_decay
         layers = VGroup(*(
-            Dot(radius=neuron_radius).get_grid(n, 1, v_buff_ratio=v_buff_ratio)
+            VGroup(*[
+                Dot(radius=neuron_radius) for _ in range(n)
+            ]).arrange(DOWN, buff=v_buff_ratio)
             for n in layer_sizes
         ))
-        layers.arrange(RIGHT, buff=h_buff_ratio * layers[0].get_width())
+        layers.arrange(RIGHT, buff=h_buff_ratio * layers[0].width)
 
         lines = VGroup(*(
-            VGroup(*(
+            VGroup(*[
                 Line(
-                    n1.get_center(),
-                    n2.get_center(),
-                    buff=n1.get_width() / 2,
+                    l1[i].get_center(),
+                    l2[j].get_center(),
+                    buff=neuron_radius,
                 )
-                for n1, n2 in it.product(l1, l2)
-            ))
-            for l1, l2 in zip(layers, layers[1:])
+                for i in range(len(l1))
+                for j in range(len(l2))
+            ])
+            for l1, l2 in zip(layers[:-1], layers[1:])
         ))
 
-        super().__init__(layers, lines)
+        self.add(layers, lines)
         self.layers = layers
         self.lines = lines
 
@@ -393,10 +406,9 @@ class NeuralNetwork(VGroup):
         for layer in self.layers:
             for dot in layer:
                 dot.set_stroke(WHITE, 1)
-                dot.set_fill(WHITE, random.random())
+                dot.set_fill(WHITE, opacity=random.random())
         return self
 
-#kここまでデバッグ済み
 
 def random_bright_color_morewhite() -> ManimColor:
             # random_bright_colorをよりも白に比重を置く
@@ -989,6 +1001,23 @@ class MachineWithDials(VGroup):
 
 
 # テスト用シーン
+class GetvecpairTest(Scene):
+    def construct(self):
+        vector_pair = get_vector_pair(angle_in_degrees=60, length=2.0, colors=(RED, GREEN))
+        self.add(vector_pair)
+
+class  NeuralNetworkTest(Scene):
+    def construct(self):
+        mob = NeuralNetwork().scale_to_fit_height(config.frame_width*0.5)
+        mob.move_to(ORIGIN)
+        self.play(FadeIn(mob))
+        self.wait()
+        self.play(mob.animate.randomize_layer_values())
+        self.wait()
+        self.play(mob.animate.randomize_line_style())
+
+
+
 class ContextAnimTest(Scene):
     def construct(self):
         target = Dot(RIGHT * 3)
