@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import warnings
 import os
+import sys
 from pathlib import Path
 import itertools as it
 import random
@@ -16,9 +17,13 @@ import random
 
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Callable
     from manim.typing import Vector3D, ManimColor
 
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+from Convolution import PixelsAsSquareColor
 
 def get_paragraph(words, line_len=40, font_size=48):
     """
@@ -97,52 +102,56 @@ def value_to_color(
 #         for index, label in enumerate(labels)
 #     ]
 
-
+#ここまでデバッグ済み
 def show_matrix_vector_product(scene, matrix, vector, buff=0.25, x_max=999, fix_in_frame=False):
-    # Show product
+    # "=" 記号
     eq = Tex("=")
-    eq.set_width(0.5 * vector.get_width())
-    shape = (matrix.shape[0], 1)
+    eq.set_width(0.5 * vector.width)
+
+    # rhsの作成
+    shape = (len(matrix.get_rows()), 1)
     rhs = NumericEmbedding(
         values=x_max * np.ones(shape),
         value_range=(-x_max, x_max),
         decimal_config=dict(include_sign=True, edge_to_fix=ORIGIN),
-        ellipses_row=matrix.ellipses_row,
+        ellipses_row=getattr(matrix, "ellipses_row", None),
     )
-    rhs.scale(vector.elements[0].get_height() / rhs.elements[0].get_height())
+    rhs.scale(vector[0][0].height / rhs[0][0].height)
     eq.next_to(vector, RIGHT, buff=buff)
     rhs.next_to(eq, RIGHT, buff=buff)
-    if fix_in_frame:
+
+    if fix_in_frame and config.renderer == "opengl":
         eq.fix_in_frame()
         rhs.fix_in_frame()
 
     scene.play(FadeIn(eq), FadeIn(rhs.get_brackets()))
 
     last_rects = VGroup()
-    n_rows = len(matrix.rows)
-    for n, row, entry in zip(it.count(), matrix.get_rows(), rhs[:-2]):
-        if matrix.ellipses_row is not None and n == (matrix.ellipses_row % n_rows):
+    n_rows = len(matrix.get_rows())
+    for n, row, entry in zip(it.count(), matrix.get_rows(), rhs.get_rows()):
+        if hasattr(matrix, "ellipses_row") and matrix.ellipses_row is not None and n == (matrix.ellipses_row % n_rows):
             scene.add(entry)
         else:
             last_rects = matrix_row_vector_product(
-                scene, row, vector, entry, last_rects,
-                fix_in_frame=fix_in_frame
+                scene, row, vector, entry[0], last_rects, fix_in_frame=fix_in_frame
             )
+
     scene.play(FadeOut(last_rects))
 
     return eq, rhs
 
-
-def matrix_row_vector_product(scene, row, vector, entry, to_fade, fix_in_frame=False):
+def matrix_row_vector_product(scene:Scene, row:WeightMatrix, vector:WeightMatrix, entry, to_fade, fix_in_frame=False):
     def get_rect(elem):
-        return SurroundingRectangle(elem, buff=0.1, is_fixed_in_frame=fix_in_frame).set_stroke(YELLOW, 2)
-
+        sur_rect = SurroundingRectangle(elem, buff=0.1).set_stroke(YELLOW, 2)
+        if fix_in_frame and config.renderer == "opengl":
+            sur_rect.fix_in_frame()
+        return sur_rect
     row_rects = VGroup(*map(get_rect, row))
-    vect_rects = VGroup(*map(get_rect, vector[:-2]))
+    vect_rects = VGroup(*map(get_rect, *vector[:-2]))
     partial_values = [0]
-    for e1, e2 in zip(row, vector[:-2]):
-        if not isinstance(e1, DecimalNumber) and isinstance(e2, DecimalNumber):
-            increment = 0
+    for e1, e2 in zip(row, vector.get_entries()):
+        if isinstance(e1, DecimalNumber) and not isinstance(e2, DecimalNumber): 
+            increment=0
         else:
             val1 = round(e1.get_value(), e1.num_decimal_places)
             val2 = round(e2.get_value(), e2.num_decimal_places)
@@ -151,12 +160,12 @@ def matrix_row_vector_product(scene, row, vector, entry, to_fade, fix_in_frame=F
     n_values = len(partial_values)
 
     scene.play(
-        ShowIncreasingSubsets(row_rects),
-        ShowIncreasingSubsets(vect_rects),
+        LaggedStart(*[FadeIn(m) for m in row_rects], lag_ratio=0.1),
+        LaggedStart(*[FadeIn(m) for m in vect_rects], lag_ratio=0.1),
+        FadeOut(to_fade),
         UpdateFromAlphaFunc(entry, lambda m, a: m.set_value(
             partial_values[min(int(np.round(a * n_values)), n_values - 1)]
         )),
-        FadeOut(to_fade),
         rate_func=linear,
     )
 
@@ -170,60 +179,96 @@ def get_full_matrix_vector_product(
     n_cols=5,
     mat_sym_color=BLUE,
     height=3.0,
-    ellipses_row=-2,
-    ellipses_col=-2,
+    ellipses_row: int = -2,
+    ellipses_col: int = -2,
 ):
-    m_indices = list(map(str, [*range(1, n_cols), "m"]))
-    n_indices = list(map(str, [*range(1, n_rows), "n"]))
-    matrix = Matrix(
-        [
-            [Rf"{mat_sym}_{{{m}, {n}}}" for n in n_indices]
-            for m in m_indices
-        ],
-        ellipses_row=ellipses_row,
-        ellipses_col=ellipses_col,
-    )
+    m_indices = list(range(1, n_rows + 1))
+    n_indices = list(range(1, n_cols + 1))
+
+    # Matrix 左辺
+    matrix_entries = []
+    for m_i, m in enumerate(m_indices):
+        row = []
+        for n_j, n in enumerate(n_indices):
+            if m_i == ellipses_row and n_j == ellipses_col:
+                row.append(R"\ddots")
+            elif m_i == ellipses_row:
+                row.append(R"\vdots")
+            elif n_j == ellipses_col:
+                row.append(R"\cdots")
+            else:
+                row.append(Rf"{mat_sym}_{{{m},{n}}}")
+        matrix_entries.append(row)
+
+    matrix = Matrix(matrix_entries,element_alignment_corner=ORIGIN)
     matrix.set_height(height)
     matrix.get_entries().set_color(mat_sym_color)
-    vector = Matrix(
-        [[Rf"x_{{{n}}}"] for n in n_indices],
-        ellipses_row=ellipses_row,
-    )
+
+    # Vector 左辺
+    vector_entries = [
+        [Rf"{vect_sym}_{{{n}}}"] if i != ellipses_row else [R"\vdots"]
+        for i, n in enumerate(m_indices)
+    ]
+    vector = Matrix(vector_entries,element_alignment_corner=ORIGIN)
     vector.match_height(matrix)
     vector.next_to(matrix, RIGHT)
+
+    # 等号
     equals = Tex("=", font_size=72)
     equals.next_to(vector, RIGHT)
 
-    result_terms = [
-        [Rf"w_{{{m}, {n}}} x_{n}" for n in n_indices]
-        for m in m_indices
-    ]
-    rhs = Matrix(
-        result_terms,
-        ellipses_row=ellipses_row,
-        ellipses_col=ellipses_col,
-    )
+    # 右辺（結果の各行）
+    rhs_entries = []
+    for m_i, m in enumerate(m_indices):
+        row = []
+        for n_j, n in enumerate(n_indices):
+            if m_i == ellipses_row and n_j == ellipses_col:
+                row.append(R"\ddots")
+            elif m_i == ellipses_row:
+                row.append(R"\vdots")
+            elif n_j == ellipses_col:
+                row.append(R"\cdots")
+            else:
+                row.append(Rf"{mat_sym}_{{{m},{n}}} {vect_sym}_{{{n}}}")
+        rhs_entries.append(row)
+
+    rhs = Matrix(rhs_entries,h_buff=1.8,element_alignment_corner=ORIGIN)
     rhs.match_height(matrix)
     rhs.next_to(equals, RIGHT)
-    for m, row in enumerate(rhs.get_rows()):
-        if m == (ellipses_row % len(m_indices)):
-            continue
-        for n, entry in enumerate(row):
-            if n != (ellipses_col % len(n_indices)):
-                entry[:4].set_color(mat_sym_color)
-        for e1, e2 in zip(row, row[1:]):
+
+    def is_dot(tex_mob):
+        text = tex_mob.get_tex_string()
+        return text in [r"\vdots", r"\ddots"]
+
+    for row in rhs.get_rows():
+        for i in range(len(row) - 1):
+            e1, e2 = row[i], row[i + 1]
+            if is_dot(e1) and is_dot(e2):
+                continue
             plus = Tex("+")
             plus.match_height(e1)
-            points = [e1.get_right(), e2.get_left()]
-            plus.move_to(midpoint(*points))
+            plus.move_to(midpoint(e1.get_right(), e2.get_left()))
             plus.align_to(e1, UP)
             e2.add(plus)
-
     return matrix, vector, equals, rhs
 
 
-def show_symbolic_matrix_vector_product(scene, matrix, vector, rhs, run_time_per_row=0.75):
+def show_symbolic_matrix_vector_product(
+        scene:Scene,
+        matrix:Matrix,
+        vector:Vector,
+        rhs:Vector,
+        run_time_per_row=0.75,
+        show_rhs_later=False
+    ):
     last_rects = VGroup()
+    if show_rhs_later:
+        # 非表示で配置（透明）
+        for row in rhs.get_rows():
+            row.set_opacity(0)
+        scene.add(rhs)
+    else:
+        scene.play(Write(rhs))
     for mat_row, rhs_row in zip(matrix.get_rows(), rhs.get_rows()):
         mat_rects = VGroup(*map(SurroundingRectangle, mat_row))
         vect_rects = VGroup(*map(SurroundingRectangle, vector.get_columns()[0]))
@@ -239,6 +284,7 @@ def show_symbolic_matrix_vector_product(scene, matrix, vector, rhs, run_time_per
         )
         last_rects = rect_group
     scene.play(FadeOut(last_rects))
+
 
 
 def data_flying_animation(
@@ -296,26 +342,13 @@ def data_modifying_matrix(scene, matrix, *args, **kwargs):
     scene.play(*anims)
 
 
-def create_pixels(image_mob, pixel_width=0.1):
-    x0, y0, z0 = image_mob.get_corner(UL)
-    x1, y1, z1 = image_mob.get_corner(DR)
-    points = np.array([
-        [x, y, 0]
-        for y in np.arange(y0, y1, -pixel_width)
-        for x in np.arange(x0, x1, pixel_width)
-    ])
-    square = Square(pixel_width).set_fill(WHITE, 1).set_stroke(width=0)
-    pixels = VGroup(
-        square.copy().move_to(point, UL).set_color(
-            image_mob.point_to_rgb(point)
-        )
-        for point in points
-    )
+def create_pixels(image_mob:ImageMobject, pixel_width=0.1):
+    pixels = PixelsAsSquareColor(image_mob.pixel_array,square_side_length=pixel_width)
+    pixels.scale_to_fit_height(config.frame_height)
     return pixels
 
-
 def get_network_connections(layer1, layer2, max_width=2.0, opacity_exp=1.0):
-    radius = layer1[0].get_width() / 2
+    radius = layer1[0].width / 2
     return VGroup(
         Line(n1.get_center(), n2.get_center(), buff=radius).set_stroke(
             color=value_to_color(random.uniform(-10, 10)),
@@ -326,7 +359,6 @@ def get_network_connections(layer1, layer2, max_width=2.0, opacity_exp=1.0):
         for n2 in layer2
     )
 
-#ここまでデバッグ済み
 
 def get_vector_pair(angle_in_degrees=90, length=1.0, colors=(BLUE, BLUE)):
     angle = angle_in_degrees * DEGREES
@@ -1001,6 +1033,91 @@ class MachineWithDials(VGroup):
 
 
 # テスト用シーン
+class ShowMatrixProductTest(Scene):
+    def construct(self):
+        matrix = WeightMatrix(shape=(8,6),ellipses_col=None,ellipses_row=None)
+        vector = WeightMatrix(shape=(6,1))
+        matrix.to_edge(UP)
+        vector.next_to(matrix, RIGHT)
+        group = VGroup(matrix, vector)
+        group.move_to(ORIGIN).shift(LEFT*1.5)
+        self.add(group)
+        show_matrix_vector_product(self, matrix, vector)
+        self.wait(2)
+
+class FullMatVecProductTest(Scene):
+    def construct(self):
+        matrix, vector, equals, rhs = get_full_matrix_vector_product(
+            mat_sym="w",
+            vect_sym="x",
+            mat_sym_color=BLUE,
+            height=3.5,
+            ellipses_row=2,
+            ellipses_col=2,
+        )
+
+        expr = VGroup(matrix, vector, equals, rhs).arrange(RIGHT, buff=0.8).scale_to_fit_width(config.frame_width*0.95)
+        self.play(Write(expr))
+        self.wait
+
+class MatVecProductTest(Scene):
+    def construct(self):
+        # 左辺の行列 A（2x2）
+        matrix = Matrix([
+            ["a_{11}", "a_{12}"],
+            ["a_{21}", "a_{22}"],
+        ])
+        # # 掛けるベクトル x（2x1）
+        vector = Matrix([
+            ["x_1"],
+            ["x_2"],
+        ])
+        # 右辺（2x1）
+        rhs = Matrix([
+            ["a_{11} x_1 + a_{12} x_2"],
+            ["a_{21} x_1 + a_{22} x_2"],
+        ])
+        # 左から右に並べて表示
+        group = VGroup(matrix, vector, rhs).arrange(RIGHT, buff=1)
+        self.play(Write(matrix),Write(vector))
+        self.wait(0.5)
+        # アニメーション実行
+        show_symbolic_matrix_vector_product(self, matrix, vector, rhs,show_rhs_later=True)
+
+        self.wait(1)
+
+
+class DataModifyingMatrixTest(Scene):
+    def construct(self):
+        matrix = WeightMatrix()
+        data_modifying_matrix(self,matrix)
+        self.wait()
+
+class CreatePixelTest(Scene):
+    def construct(self):
+        image_path = "./patch_0_0.png"
+        image_mob = ImageMobject(image_path).scale_to_fit_height(config.frame_height)
+        self.wait()
+        self.play(FadeIn(image_mob))
+        self.wait(2)
+        self.play(FadeOut(image_mob))
+        self.wait()
+        pixels = create_pixels(image_mob, pixel_width=0.5)
+        self.play(Create(pixels))
+        self.wait(2)
+
+
+class GetNetConTest(Scene):
+    def construct(self):
+        net_mob = NeuralNetwork()
+        self.add(net_mob)
+        self.wait()
+        self.play(FadeOut(net_mob))
+        self.wait(1)
+        con_mob = get_network_connections(net_mob.layers[0], net_mob.layers[1])
+        self.play(Create(con_mob))
+        self.wait()
+
 class GetvecpairTest(Scene):
     def construct(self):
         vector_pair = get_vector_pair(angle_in_degrees=60, length=2.0, colors=(RED, GREEN))

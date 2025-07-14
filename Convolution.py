@@ -210,7 +210,7 @@ class PixelsAsSquare(VGroup):
 # ----------------------------------------------------------------------------
 class PixelsAsSquareColor(VGroup):
     """
-    カラー画像のピクセルデータ（3D NumPy配列）を受け取り、
+    RGBAもしくはRGB画像のピクセルデータ（3D NumPy配列）を受け取り、
     各ピクセルを色付けされたSquareで表現するVGroupを生成するクラス。
     """
     def __init__(
@@ -223,11 +223,9 @@ class PixelsAsSquareColor(VGroup):
         **kwargs
     ):
         """
-        PixelsAsSquareColorのコンストラクタ
-
         Args:
-            image_data (np.ndarray): カラー画像のピクセルデータ（3D配列, shape=(h, w, 3)）。
-                                     値の範囲は0-255の整数を想定。
+            image_data (np.ndarray): カラー画像のピクセルデータ（3D配列, shape=(h, w, 3 or 4)）。
+                                    値の範囲は0-255の整数を想定。
             square_side_length (float, optional): 各ピクセルを表す正方形の一辺の長さ。デフォルトは1.0。
             stroke_width (float, optional): 正方形の境界線の幅。デフォルトは0.1。
             stroke_color (ManimColor, optional): 正方形の境界線の色。デフォルトはGRAY。
@@ -239,21 +237,21 @@ class PixelsAsSquareColor(VGroup):
             raise TypeError("image_data must be a 3D NumPy array (height, width, channels).")
         
         height, width, channels = image_data.shape
-        if channels < 3:
-            raise ValueError("image_data must have at least 3 channels (R, G, B).")
+        if channels not in (3, 4):
+            raise ValueError("image_data must have 3 channels (R, G, B) or 4 (RGBA) channels.")
 
         pixel_mobjects = []
 
         # 画像データをループ処理
         for row_data in image_data:
-            for pixel_rgb in row_data:
-                # ピクセル値（0-255）をManimが使う色（0.0-1.0）に正規化
-                normalized_rgb = pixel_rgb[:3] / 255.0
+            for pixel in row_data:
+                normalized_rgb = pixel[:3] / 255.0  #R,G,B正規化
+                alpha = pixel[3] / 255.0 if channels == 4 else 1.0  # Alpha正規化 or 不透明
                 
                 # Squareを作成し、ピクセル色で塗りつぶす
                 square = Square(
                     side_length=square_side_length,
-                    fill_opacity=1.0,
+                    fill_opacity=alpha,
                     stroke_width=stroke_width,
                     stroke_color=stroke_color
                 )

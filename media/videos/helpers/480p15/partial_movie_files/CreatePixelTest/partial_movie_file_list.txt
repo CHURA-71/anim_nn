@@ -1,0 +1,8 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/1185818338_2688965532_631829896.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/1185818338_2310362190_1666280314.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/624642324_4247107814_377333121.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/624642324_1275173908_3797182535.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/624642324_667144672_3278671325.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/624642324_213024575_3282659717.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/helpers/480p15/partial_movie_files/CreatePixelTest/624642324_4247107814_3227651572.mp4'
