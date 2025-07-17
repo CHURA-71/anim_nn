@@ -1,4 +1,4 @@
-from manim import * #pyright: ignore
+from manim import *
 import random
 from typing import Optional
 
@@ -86,7 +86,6 @@ class NeuralNetworkMobject(VGroup):
 
         self.neuron_layers = VGroup()
         self.edge_layers = VGroup()
-        # Circleオブジェクトのみを保持するリスト（エッジ接続・アニメーション用）
         self._neuron_mobjects_list = []
 
         self._construct_network()
@@ -289,12 +288,12 @@ class NeuralNetworkMobject(VGroup):
             layer_neurons = self._neuron_mobjects_list[layer_index]
             anim_stroke = layer_neurons.animate.set_stroke(color=self.neuron_stroke_color)
             anim_fill = layer_neurons.animate.set_fill(self.neuron_fill_color, opacity=1)
-            return AnimationGroup(anim_stroke, anim_fill, **animation_kwargs) #pyright: ignore
+            return AnimationGroup(anim_stroke, anim_fill, **animation_kwargs) 
         
         else:            
-            neuron_anim = self.neuron_layers.animate(**animation_kwargs).set_color(self.neuron_stroke_color) #pyright: ignore
+            neuron_anim = self.neuron_layers.animate(**animation_kwargs).set_color(self.neuron_stroke_color)
             anim_fill = self.neuron_layers.animate.set_fill(self.neuron_fill_color, opacity=1)
-            return AnimationGroup(neuron_anim, anim_fill, **animation_kwargs) #pyright: ignore
+            return AnimationGroup(neuron_anim, anim_fill, **animation_kwargs)
 
 
 # ----------------------------------------------------------------------------

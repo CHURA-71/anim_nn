@@ -1,0 +1,9 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/3977891868_2790135150_223239710.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_2834709167_1678195397.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_2875092282_256451892.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_2834709167_1423616553.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_3950410068_122766490.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_2834709167_1699161165.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_2067762866_2708807245.mp4'
+file 'file:/Users/watanabe/Manim/anim_nn/transformers/media/videos/helpers/1080p60/partial_movie_files/MachineDialTest/2852726489_2834709167_3119199899.mp4'

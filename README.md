@@ -56,4 +56,28 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
 
 3. Transformer.py　(未着手)開発予定
    - トランスフォーマーにおける演算などを可視化するクラス。
+   <br>
+   a. `WeightMatrix`：重み行列を可視化するクラス。数値によって色を変更。
+   <br><img src="./source/Matrix.png" width="50%"><br>
+   b. `NumericEmbedding`：埋め込みベクトルを可視化するクラス。
+   <br><img src="./source/NumericEmbedding.png" width="50%"><br>
+   c. `EmbeddingArray`：埋め込み行列を可視化するクラス。
+   <br><img src="./source/EmbeddingArray.png" width="50%"><br>
+   d. `RandomizeMatrixEntries`：重み行列の要素をランダムに変更するアニメーションを返す。
+   <br><img src="./source/RandomizeMatrixEntries.gif" width="50%"><br>
+   e. `MachineWithDials`：複数のダイアルを持つMobject。
+  　<br><img src="./source/MachineWithDials.gif" width="50%"><br>
+   f. `TextLabeledArrow`：ラベル付きのArrowを作成。ManimCEにはLabeledArrowクラスが用意されているため。使い分ける。
+   <br><img src="./source/TextLabeledArrow.gif" width="50%"><br>
+   g. `ContextAnimation`：sourceからtargetに向けて弧を描くような光のアニメーションを返す。
+   <br><img src="./source/ContextAnimation.gif" width="50%"><br>
+   h. `NeuralNetwork`：多層パーセプトロンを可視化するクラス。ランダムにノードとエッジの色を変化。
+   <br><img src="./source/NeuralNetwork.gif" width="50%"><br>
+   i. `get_vector_pair`：間の角度を指定すると、２つのベクトル(Vecotr)を返すメソッド。
+   <br><img src="./source/get_vector_pair.png" width="50%"><br>
+   j. `get_network_connections`:ネットワークのエッジ(Line)を返すメソッド。
+   <br><img src="./source/get_network_connections.gif" width="50%"><br>
+   k. `create_pixels`：ImageMobectをPixelsに分割するメソッド。
+   <br><img src="./source/create_pixels.png" width="50%"><br>
+
 
