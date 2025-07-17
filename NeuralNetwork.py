@@ -1,5 +1,6 @@
-from manim import *
+from manim import * #pyright: ignore
 import random
+from typing import Optional
 
 # ----------------------------------------------------------------------------
 # ニューラルネットワーク Mobject クラス
@@ -51,14 +52,14 @@ class NeuralNetworkMobject(VGroup):
     def __init__(
         self,
         layer_sizes:list[int],
-        ellipse_layer_sizes:list[bool]=None,
+        ellipse_layer_sizes:Optional[list[bool]]=None,
         neuron_radius:float=0.15,
         neuron_stroke_color:ManimColor=BLUE,
         neuron_fill_color:ManimColor=BLACK,
         neuron_to_neuron_buff:float=MED_SMALL_BUFF,
         layer_to_layer_buff:float=LARGE_BUFF,
         edge_color:ManimColor=WHITE,
-        edge_color_random:bool=False,
+        edge_color_random:Optional[bool]=False,
         edge_stroke_width:float=1.5,
         max_shown_neurons:int=16,
         activation_color:ManimColor=YELLOW,
@@ -288,12 +289,12 @@ class NeuralNetworkMobject(VGroup):
             layer_neurons = self._neuron_mobjects_list[layer_index]
             anim_stroke = layer_neurons.animate.set_stroke(color=self.neuron_stroke_color)
             anim_fill = layer_neurons.animate.set_fill(self.neuron_fill_color, opacity=1)
-            return AnimationGroup(anim_stroke, anim_fill, **animation_kwargs)
+            return AnimationGroup(anim_stroke, anim_fill, **animation_kwargs) #pyright: ignore
         
         else:            
-            neuron_anim = self.neuron_layers.animate(**animation_kwargs).set_color(self.neuron_stroke_color)
+            neuron_anim = self.neuron_layers.animate(**animation_kwargs).set_color(self.neuron_stroke_color) #pyright: ignore
             anim_fill = self.neuron_layers.animate.set_fill(self.neuron_fill_color, opacity=1)
-            return AnimationGroup(neuron_anim, anim_fill, **animation_kwargs)
+            return AnimationGroup(neuron_anim, anim_fill, **animation_kwargs) #pyright: ignore
 
 
 # ----------------------------------------------------------------------------
