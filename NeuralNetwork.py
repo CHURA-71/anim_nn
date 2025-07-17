@@ -12,24 +12,65 @@ class NeuralNetworkMobject(VGroup):
     ニューロン数が多すぎる場合は自動的に省略されます。
     順伝播や逆伝播のアニメーションを簡単に作成できるメソッドを提供します。
     """
+    """
+    --- Example ---
+    class TestNeuralNetworkScene(Scene):
+    def construct(self):
+        # 1. タイトル表示
+        title = Tex("Neural Network Mobject Demo").to_edge(UP)
+        self.play(Write(title))
+        
+        # 2. ネットワーク生成
+        # 中間層を20ニューロンにし、省略表示をテスト
+        nn = NeuralNetworkMobject([5, 20, 14, 8],edge_color_random=True).scale(0.7)
+        self.play(Create(nn))
+        self.wait(3)
+        
+        # 3. 順伝播アニメーション
+        status_text = Tex("Forward Propagation", font_size=36).next_to(nn, DOWN)
+        self.play(Write(status_text))
+        self.play(nn.forward_pass_animation())
+        self.wait(3)
+        self.play(FadeOut(status_text))
+        
+        # 4. 色をリセット
+        self.play(nn.reset_colors())
+        self.wait(2)
+        
+        # 5. 逆伝播アニメーション
+        status_text.become(Tex("Backward Propagation", font_size=36).next_to(nn, DOWN))
+        self.play(Write(status_text))
+        self.play(nn.backprop_animation())
+        self.wait(2)
+        self.play(FadeOut(status_text))
+        
+        # 6. 終了
+        self.play(FadeOut(nn), FadeOut(title))
+        self.wait(1)
+    """
     def __init__(
         self,
-        layer_sizes,
-        neuron_radius=0.15,
-        neuron_stroke_color=BLUE,
-        neuron_fill_color=BLACK,
-        neuron_to_neuron_buff=MED_SMALL_BUFF,
-        layer_to_layer_buff=LARGE_BUFF,
-        edge_color=WHITE,
-        edge_color_random=False,
-        edge_stroke_width=1.5,
-        max_shown_neurons=16,
-        activation_color=YELLOW,
-        backprop_color=RED,
+        layer_sizes:list[int],
+        ellipse_layer_sizes:list[bool]=None,
+        neuron_radius:float=0.15,
+        neuron_stroke_color:ManimColor=BLUE,
+        neuron_fill_color:ManimColor=BLACK,
+        neuron_to_neuron_buff:float=MED_SMALL_BUFF,
+        layer_to_layer_buff:float=LARGE_BUFF,
+        edge_color:ManimColor=WHITE,
+        edge_color_random:bool=False,
+        edge_stroke_width:float=1.5,
+        max_shown_neurons:int=16,
+        activation_color:ManimColor=YELLOW,
+        backprop_color:ManimColor=RED,
         **kwargs,
     ):
+        if ellipse_layer_sizes is None:
+            ellipse_layer_sizes = [False] * len(layer_sizes)
+
         super().__init__(**kwargs)
         self.layer_sizes = layer_sizes
+        self.ellipse_layer_sizes = ellipse_layer_sizes
         self.neuron_radius = neuron_radius
         self.neuron_stroke_color = neuron_stroke_color
         self.neuron_fill_color = neuron_fill_color
@@ -60,20 +101,21 @@ class NeuralNetworkMobject(VGroup):
 
     def _create_neuron_layers(self):
         """ニューロン層を生成する。"""
-        for num_neurons in self.layer_sizes:
-            layer, neurons = self._create_one_layer(num_neurons)
+        for i, num_neurons in enumerate(self.layer_sizes):
+            ellipse = self.ellipse_layer_sizes[i] or num_neurons > self.max_shown_neurons
+            layer, neurons = self._create_one_layer(num_neurons, ellipse)
             self.neuron_layers.add(layer)
             self._neuron_mobjects_list.append(neurons)
 
-    def _create_one_layer(self, num_neurons):
+    def _create_one_layer(self, num_neurons, ellipse:bool=False):
         """指定された数のニューロンを持つ単一の層を生成する。"""
         layer_vgroup = VGroup()
         neurons_vgroup = VGroup()
-
-        if num_neurons > self.max_shown_neurons:
+    
+        if ellipse:
             # 省略表示の場合
-            num_top = self.max_shown_neurons // 2
-            num_bottom = self.max_shown_neurons - num_top
+            num_top = num_neurons // 2
+            num_bottom = num_neurons - num_top
             
             for _ in range(num_top):
                 neuron = self._create_neuron()
@@ -334,40 +376,3 @@ class NeuralNetworkWithActivation(NeuralNetworkMobject):
         animations.append(self.deactivate_layer(len(self.layer_sizes) - 1, animation_kwargs=animation_kwargs))
         
         return Succession(*animations, lag_ratio=0.8)
-
-# ----------------------------------------------------------------------------
-# テスト用アニメーションシーン
-# ----------------------------------------------------------------------------
-class TestNeuralNetworkScene(Scene):
-    def construct(self):
-        # 1. タイトル表示
-        title = Tex("Neural Network Mobject Demo").to_edge(UP)
-        self.play(Write(title))
-        
-        # 2. ネットワーク生成
-        # 中間層を20ニューロンにし、省略表示をテスト
-        nn = NeuralNetworkMobject([5, 20, 14, 8],edge_color_random=True).scale(0.7)
-        self.play(Create(nn))
-        self.wait(3)
-        
-        # 3. 順伝播アニメーション
-        status_text = Tex("Forward Propagation", font_size=36).next_to(nn, DOWN)
-        self.play(Write(status_text))
-        self.play(nn.forward_pass_animation())
-        self.wait(3)
-        self.play(FadeOut(status_text))
-        
-        # 4. 色をリセット
-        self.play(nn.reset_colors())
-        self.wait(2)
-        
-        # 5. 逆伝播アニメーション
-        status_text.become(Tex("Backward Propagation", font_size=36).next_to(nn, DOWN))
-        self.play(Write(status_text))
-        self.play(nn.backprop_animation())
-        self.wait(2)
-        self.play(FadeOut(status_text))
-        
-        # 6. 終了
-        self.play(FadeOut(nn), FadeOut(title))
-        self.wait(1)

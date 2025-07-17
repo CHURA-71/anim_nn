@@ -18,7 +18,7 @@ import random
 
 if TYPE_CHECKING:
     from typing import Optional, Callable
-    from manim.typing import Vector3D, ManimColor
+    from manim.typing import Vector3D
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if parent_dir not in sys.path:
@@ -57,6 +57,7 @@ def softmax(logits, temperature=1.0):
         return result
     return exps / np.sum(exps)
 
+#ここまでデバッグ済み
 
 def value_to_color(
     value,
@@ -102,7 +103,7 @@ def value_to_color(
 #         for index, label in enumerate(labels)
 #     ]
 
-#ここまでデバッグ済み
+
 def show_matrix_vector_product(scene, matrix, vector, buff=0.25, x_max=999, fix_in_frame=False):
     # "=" 記号
     eq = Tex("=")
@@ -200,7 +201,7 @@ def get_full_matrix_vector_product(
                 row.append(Rf"{mat_sym}_{{{m},{n}}}")
         matrix_entries.append(row)
 
-    matrix = Matrix(matrix_entries,element_alignment_corner=ORIGIN)
+    matrix = Matrix(matrix_entries,element_alignment_corner=tuple(ORIGIN))
     matrix.set_height(height)
     matrix.get_entries().set_color(mat_sym_color)
 
@@ -209,7 +210,7 @@ def get_full_matrix_vector_product(
         [Rf"{vect_sym}_{{{n}}}"] if i != ellipses_row else [R"\vdots"]
         for i, n in enumerate(m_indices)
     ]
-    vector = Matrix(vector_entries,element_alignment_corner=ORIGIN)
+    vector = Matrix(vector_entries,element_alignment_corner=tuple(ORIGIN))
     vector.match_height(matrix)
     vector.next_to(matrix, RIGHT)
 
@@ -232,7 +233,7 @@ def get_full_matrix_vector_product(
                 row.append(Rf"{mat_sym}_{{{m},{n}}} {vect_sym}_{{{n}}}")
         rhs_entries.append(row)
 
-    rhs = Matrix(rhs_entries,h_buff=1.8,element_alignment_corner=ORIGIN)
+    rhs = Matrix(rhs_entries,h_buff=1.8,element_alignment_corner=tuple(ORIGIN))
     rhs.match_height(matrix)
     rhs.next_to(equals, RIGHT)
 
@@ -247,7 +248,7 @@ def get_full_matrix_vector_product(
                 continue
             plus = Tex("+")
             plus.match_height(e1)
-            plus.move_to(midpoint(e1.get_right(), e2.get_left()))
+            plus.move_to((e1.get_right() + e2.get_left()) / 2)
             plus.align_to(e1, UP)
             e2.add(plus)
     return matrix, vector, equals, rhs
@@ -313,7 +314,7 @@ def get_data_modifying_matrix_anims(
     run_time=3,
     fix_in_frame=False,
     font_size=48,
-):
+    ):
     x_min, x_max = [matrix.get_x(LEFT), matrix.get_x(RIGHT)]
     y_min, y_max = [matrix.get_y(UP), matrix.get_y(DOWN)]
     z = matrix.get_z()
