@@ -54,7 +54,7 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
   
     [![Preview](https://img.youtube.com/vi/HDcqQeFiKuo/0.jpg)](https://youtu.be/HDcqQeFiKuo)
 
-3. Transformer.py　(未着手)開発予定
+3. Transformer.py　(開発中)
    - トランスフォーマーにおける演算などを可視化するクラス。
    <br>
    a. `WeightMatrix`：重み行列を可視化するクラス。数値によって色を変更。
@@ -79,5 +79,15 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
    <br><img src="./source/get_network_connections.gif" width="50%"><br>
    k. `create_pixels`：ImageMobectをPixelsに分割するメソッド。
    <br><img src="./source/create_pixels.png" width="50%"><br>
+   l. `show_matrix_vector_product`：行列とベクトルの積を可視化するメソッド。
+   <br><img src="./source/show_matrix_vector_product.gif" width="50%"><br>
+   m. `data_modifying_matrix`：データによって行列の数値が変化するアニメーションを返すメソッド。
+   <br><img src="./source/data_modifying_matrix.gif" width="50%">
+   n. `show_symbolic_matrix_vector_product`：行列とベクトルの積を可視化するメソッド。こちらは数値計算を行わない。
+   <br><img src="./source/show_symbolic_matrix_vector_product.gif" width="50%"><br>
+   o. `get_full_matrix_vector_product`：行列とベクトルの積を返すメソッド。こちらは計算過程のアニメーションなし。
+   <br><img src="./source/get_full_matrix_vector_product.gif" width="50%"><br>
+
+
 
 

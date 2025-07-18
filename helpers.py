@@ -17,7 +17,7 @@ import random
 
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable
+    from typing import Optional
     from manim.typing import Vector3D
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -105,6 +105,20 @@ def value_to_color(
 
 
 def show_matrix_vector_product(scene, matrix, vector, buff=0.25, x_max=999, fix_in_frame=False):
+    """
+    show_matrix_vector_productの使用例
+        class ShowMatrixProductTest(Scene):
+            def construct(self):
+                matrix = WeightMatrix(shape=(8,6),ellipses_col=None,ellipses_row=None)
+                vector = WeightMatrix(shape=(6,1))
+                matrix.to_edge(UP)
+                vector.next_to(matrix, RIGHT)
+                group = VGroup(matrix, vector)
+                group.move_to(ORIGIN).shift(LEFT*1.5)
+                self.add(group)
+                show_matrix_vector_product(self, matrix, vector)
+                self.wait(2)
+    """
     # "=" 記号
     eq = Tex("=")
     eq.set_width(0.5 * vector.width)
@@ -127,21 +141,18 @@ def show_matrix_vector_product(scene, matrix, vector, buff=0.25, x_max=999, fix_
 
     scene.play(FadeIn(eq), FadeIn(rhs.get_brackets()))
 
-    last_rects = VGroup()
     n_rows = len(matrix.get_rows())
     for n, row, entry in zip(it.count(), matrix.get_rows(), rhs.get_rows()):
         if hasattr(matrix, "ellipses_row") and matrix.ellipses_row is not None and n == (matrix.ellipses_row % n_rows):
             scene.add(entry)
         else:
-            last_rects = matrix_row_vector_product(
-                scene, row, vector, entry[0], last_rects, fix_in_frame=fix_in_frame
+            matrix_row_vector_product(
+                scene, row, vector, entry[0], fix_in_frame=fix_in_frame
             )
-
-    scene.play(FadeOut(last_rects))
 
     return eq, rhs
 
-def matrix_row_vector_product(scene:Scene, row:WeightMatrix, vector:WeightMatrix, entry, to_fade, fix_in_frame=False):
+def matrix_row_vector_product(scene:Scene, row:WeightMatrix, vector:WeightMatrix, entry, fix_in_frame=False):
     def get_rect(elem):
         sur_rect = SurroundingRectangle(elem, buff=0.1).set_stroke(YELLOW, 2)
         if fix_in_frame and config.renderer == "opengl":
@@ -154,23 +165,33 @@ def matrix_row_vector_product(scene:Scene, row:WeightMatrix, vector:WeightMatrix
         if isinstance(e1, DecimalNumber) and not isinstance(e2, DecimalNumber): 
             increment=0
         else:
-            val1 = round(e1.get_value(), e1.num_decimal_places)
-            val2 = round(e2.get_value(), e2.num_decimal_places)
+            val1 = round(e1.get_value(), int(e1.num_decimal_places))
+            val2 = round(e2.get_value(), int(e2.num_decimal_places))
             increment = val1 * val2
         partial_values.append(partial_values[-1] + increment)
     n_values = len(partial_values)
 
+    
     scene.play(
-        LaggedStart(*[FadeIn(m) for m in row_rects], lag_ratio=0.1),
-        LaggedStart(*[FadeIn(m) for m in vect_rects], lag_ratio=0.1),
-        FadeOut(to_fade),
-        UpdateFromAlphaFunc(entry, lambda m, a: m.set_value(
-            partial_values[min(int(np.round(a * n_values)), n_values - 1)]
-        )),
-        rate_func=linear,
+        AnimationGroup(
+            AnimationGroup(
+                LaggedStart(*[FadeIn(m) for m in row_rects], lag_ratio=0.1),
+                LaggedStart(*[FadeIn(m) for m in vect_rects], lag_ratio=0.1),
+                UpdateFromAlphaFunc(entry, lambda m, a: m.set_value(
+                    partial_values[min(int(np.round(a * n_values)), n_values - 1)]
+                )),
+            ),
+            AnimationGroup(
+                LaggedStart(*[FadeOut(m) for m in row_rects], lag_ratio=0.1),
+                LaggedStart(*[FadeOut(m) for m in vect_rects], lag_ratio=0.1),
+            ),
+            rate_func=linear,
+            lag_ratio=1.5,
+        ),
+        lag_ratio=0.1,
+        run_time=1,
     )
 
-    return VGroup(row_rects, vect_rects)
 
 
 def get_full_matrix_vector_product(
@@ -182,7 +203,25 @@ def get_full_matrix_vector_product(
     height=3.0,
     ellipses_row: int = -2,
     ellipses_col: int = -2,
-):
+    ):
+    """
+    get_full_matrix_vector_productの使用例
+        class FullMatVecProductTest(Scene):
+            def construct(self):
+                matrix, vector, equals, rhs = get_full_matrix_vector_product(
+                    mat_sym="w",
+                    vect_sym="x",
+                    mat_sym_color=BLUE,
+                    height=3.5,
+                    ellipses_row=2,
+                    ellipses_col=2,
+                )
+
+                expr = VGroup(matrix, vector, equals, rhs).arrange(RIGHT, buff=0.8).scale_to_fit_width(config.frame_width*0.95)
+                self.play(Write(expr))
+                self.wait()
+
+    """
     m_indices = list(range(1, n_rows + 1))
     n_indices = list(range(1, n_cols + 1))
 
@@ -262,6 +301,34 @@ def show_symbolic_matrix_vector_product(
         run_time_per_row=0.75,
         show_rhs_later=False
     ):
+    """
+    show_symbolic_matrix_vector_productの使用例
+        class MatVecProductTest(Scene):
+            def construct(self):
+                # 左辺の行列 A（2x2）
+                matrix = Matrix([
+                    ["a_{11}", "a_{12}"],
+                    ["a_{21}", "a_{22}"],
+                ])
+                # # 掛けるベクトル x（2x1）
+                vector = Matrix([
+                    ["x_1"],
+                    ["x_2"],
+                ])
+                # 右辺（2x1）
+                rhs = Matrix([
+                    ["a_{11} x_1 + a_{12} x_2"],
+                    ["a_{21} x_1 + a_{22} x_2"],
+                ])
+                # 左から右に並べて表示
+                group = VGroup(matrix, vector, rhs).arrange(RIGHT, buff=1)
+                self.play(Write(matrix),Write(vector))
+                self.wait(0.5)
+                # アニメーション実行
+                show_symbolic_matrix_vector_product(self, matrix, vector, rhs,show_rhs_later=True)
+
+                self.wait(1)
+    """
     last_rects = VGroup()
     if show_rhs_later:
         # 非表示で配置（透明）
@@ -327,18 +394,32 @@ def get_data_modifying_matrix_anims(
         for a1 in np.linspace(0, alpha_maxes[1], word_shape[1])
         for a2 in np.linspace(0, alpha_maxes[0], word_shape[0])
     ])
-    return [
-        LaggedStart(
+    # pointsが空でない場合のみLaggedStartを実行
+    if len(points) > 0:
+        flying_anim = LaggedStart(
             (data_flying_animation(p, vect=shift_vect, fix_in_frame=fix_in_frame, font_size=font_size)
             for p in points),
             lag_ratio=1 / len(points),
             run_time=run_time
-        ),
+        )
+    else:
+        flying_anim = Wait(run_time)
+    
+    return [
+        flying_anim,
         RandomizeMatrixEntries(matrix, run_time=run_time),
     ]
 
 
 def data_modifying_matrix(scene, matrix, *args, **kwargs):
+    """
+    data_modifying_matrixの使用例
+        class DataModifyingMatrixTest(Scene):
+            def construct(self):
+                matrix = WeightMatrix()
+                data_modifying_matrix(self,matrix)
+                self.wait()
+    """
     anims = get_data_modifying_matrix_anims(matrix, *args, **kwargs)
     scene.play(*anims)
 
@@ -555,18 +636,26 @@ class ContextAnimation(AnimationGroup):
         if fix_in_frame:
             arcs.fix_in_frame()
 
-        arcs.shuffle()
-        lag_ratio = 0.5 / len(arcs) if lag_ratio is None else lag_ratio
+        # arcsが空でない場合のみアニメーションを実行
+        if len(arcs) > 0:
+            arcs.shuffle()
+            lag_ratio = 0.5 / len(arcs) if lag_ratio is None else lag_ratio
 
-        super().__init__(
-            *[
-                ShowPassingFlash(arc, time_width=time_width)
-                for arc in arcs
-            ],
-            lag_ratio=lag_ratio,
-            run_time=run_time,
-            **kwargs,
-        )
+            super().__init__(
+                *[
+                    ShowPassingFlash(arc, time_width=time_width)
+                    for arc in arcs
+                ],
+                lag_ratio=lag_ratio,
+                run_time=run_time,
+                **kwargs,
+            )
+        else:
+            # arcsが空の場合はWaitアニメーションを実行
+            super().__init__(
+                Wait(run_time),
+                **kwargs,
+            )
 
 
 
@@ -1123,84 +1212,30 @@ class MachineWithDials(VGroup):
         self.add(box, dials)
 
     def random_change_animation(self, lag_factor=0.5, run_time=3.0, **kwargs):
-        return LaggedStart(
-            *(
-                dial.animate_set_value(dial.get_random_value())
-                for dial in self.dials
-            ), lag_ratio=lag_factor / len(self.dials),
-            run_time=run_time,
-            **kwargs
-        )
+        # dialsが空でない場合のみLaggedStartを実行
+        if len(self.dials) > 0:
+            return LaggedStart(
+                *(
+                    dial.animate_set_value(dial.get_random_value())
+                    for dial in self.dials
+                ), lag_ratio=lag_factor / len(self.dials),
+                run_time=run_time,
+                **kwargs
+            )
+        else:
+            return Wait(run_time)
 
     def rotate_all_dials(self, run_time=2, lag_factor=1.0):
-        shuffled_dials = list(self.dials)
-        random.shuffle(shuffled_dials)
-        return LaggedStart(
-            *(
-                Rotate(dial.needle, TAU, about_point=dial.get_center())
-                for dial in shuffled_dials
-            ),
-            lag_ratio=lag_factor / len(self.dials)
-        )
-
-
-# テスト用シーン
-class ShowMatrixProductTest(Scene):
-    def construct(self):
-        matrix = WeightMatrix(shape=(8,6),ellipses_col=None,ellipses_row=None)
-        vector = WeightMatrix(shape=(6,1))
-        matrix.to_edge(UP)
-        vector.next_to(matrix, RIGHT)
-        group = VGroup(matrix, vector)
-        group.move_to(ORIGIN).shift(LEFT*1.5)
-        self.add(group)
-        show_matrix_vector_product(self, matrix, vector)
-        self.wait(2)
-
-class FullMatVecProductTest(Scene):
-    def construct(self):
-        matrix, vector, equals, rhs = get_full_matrix_vector_product(
-            mat_sym="w",
-            vect_sym="x",
-            mat_sym_color=BLUE,
-            height=3.5,
-            ellipses_row=2,
-            ellipses_col=2,
-        )
-
-        expr = VGroup(matrix, vector, equals, rhs).arrange(RIGHT, buff=0.8).scale_to_fit_width(config.frame_width*0.95)
-        self.play(Write(expr))
-        self.wait
-
-class MatVecProductTest(Scene):
-    def construct(self):
-        # 左辺の行列 A（2x2）
-        matrix = Matrix([
-            ["a_{11}", "a_{12}"],
-            ["a_{21}", "a_{22}"],
-        ])
-        # # 掛けるベクトル x（2x1）
-        vector = Matrix([
-            ["x_1"],
-            ["x_2"],
-        ])
-        # 右辺（2x1）
-        rhs = Matrix([
-            ["a_{11} x_1 + a_{12} x_2"],
-            ["a_{21} x_1 + a_{22} x_2"],
-        ])
-        # 左から右に並べて表示
-        group = VGroup(matrix, vector, rhs).arrange(RIGHT, buff=1)
-        self.play(Write(matrix),Write(vector))
-        self.wait(0.5)
-        # アニメーション実行
-        show_symbolic_matrix_vector_product(self, matrix, vector, rhs,show_rhs_later=True)
-
-        self.wait(1)
-
-
-class DataModifyingMatrixTest(Scene):
-    def construct(self):
-        matrix = WeightMatrix()
-        data_modifying_matrix(self,matrix)
-        self.wait()
+        # dialsが空でない場合のみLaggedStartを実行
+        if len(self.dials) > 0:
+            shuffled_dials = list(self.dials)
+            random.shuffle(shuffled_dials)
+            return LaggedStart(
+                *(
+                    Rotate(dial.needle, TAU, about_point=dial.get_center())
+                    for dial in shuffled_dials
+                ),
+                lag_ratio=lag_factor / len(self.dials)
+            )
+        else:
+            return Wait(run_time)
