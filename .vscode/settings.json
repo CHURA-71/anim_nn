@@ -1,0 +1,9 @@
+{
+    //Manimではワイルドカードインポートが一般的
+    "cursorpyright.analysis.diagnosticSeverityOverrides": {
+        "reportWildcardImportFromLibrary": false,
+        "reportArgumentType": "none",
+        "reportCallIssue": false
+    },
+    "editor.fontSize": 16
+}
