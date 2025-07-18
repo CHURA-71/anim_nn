@@ -291,7 +291,7 @@ class NeuralNetworkMobject(VGroup):
             return AnimationGroup(anim_stroke, anim_fill, **animation_kwargs) 
         
         else:            
-            neuron_anim = self.neuron_layers.animate(**animation_kwargs).set_color(self.neuron_stroke_color)
+            neuron_anim = self.neuron_layers.animate(**animation_kwargs).set_color(self.neuron_stroke_color) #pyright: ignore
             anim_fill = self.neuron_layers.animate.set_fill(self.neuron_fill_color, opacity=1)
             return AnimationGroup(neuron_anim, anim_fill, **animation_kwargs)
 

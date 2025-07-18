@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
-from Convolution import PixelsAsSquareColor
+from .Convolution import PixelsAsSquareColor
 
 def get_paragraph(words, line_len=40, font_size=48):
     """
@@ -429,7 +429,7 @@ def create_pixels(image_mob:ImageMobject, pixel_width=0.1):
     create_pixelsの使用例
         class CreatePixelTest(Scene):
             def construct(self):
-                image_path = "./cat.png"
+                image_path = "./source/cat.png"
                 image_mob = ImageMobject(image_path).scale_to_fit_height(config.frame_height)
                 self.wait()
                 self.play(FadeIn(image_mob))

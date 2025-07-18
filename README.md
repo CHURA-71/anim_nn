@@ -46,7 +46,7 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
       - `CalConvolution`:畳み込み演算を実査に計算し特徴マップを作成する過程を可視化する。少しレンダリングが重いため、画像サイズには注意が必要。
       - `PixelsAsSquare`：画像のピクセルをSquareで表示するためのクラス。(グレースケール用)
   
-        <img src="./MNIST9.png" width="50%">
+        <img src="./source//MNIST9.png" width="50%">
 
       - `PixelsAsSquareColor`：画像のピクセルをSquareで表示するためのクラス。(カラー用)
         - 画像はNumpy配列に変換されている必要があるが、画像をNumpy配列に変換するための関数`image_to_array`も用意。
