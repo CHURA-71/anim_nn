@@ -1,9 +1,9 @@
 {
-    //Manimではワイルドカードインポートが一般的
+    //Manimプロジェクトのpyright設定
+    //Cursorのpyright設定
     "cursorpyright.analysis.diagnosticSeverityOverrides": {
-        "reportWildcardImportFromLibrary": false,
-        "reportArgumentType": "none",
-        "reportCallIssue": false
-    },
-    "editor.fontSize": 16
+        "reportWildcardImportFromLibrary": false, //ワイルドカードインポートを許可
+        "reportArgumentType": "none" //引数の型チェックを無効化
+
+    }
 }
