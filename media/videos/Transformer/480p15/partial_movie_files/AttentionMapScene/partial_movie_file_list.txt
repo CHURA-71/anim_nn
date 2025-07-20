@@ -1,0 +1,4 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/AttentionMapScene/1185818338_2724326011_223132457.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/AttentionMapScene/624642324_2194079980_2084929533.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/AttentionMapScene/624642324_4071516364_3411148050.mp4'

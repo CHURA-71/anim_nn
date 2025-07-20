@@ -1,0 +1,9 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/1185818338_3900207270_2358810818.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_3436207933_1056568265.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_3417363274_1483926259.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_3304727375_4015815052.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_2093670378_3345848698.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_2679084832_223013784.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_3903410948_1983073042.mp4'
+file 'file:C:/Users/shota/anim_nn/media/videos/Transformer/480p15/partial_movie_files/EmbeddingScene/624642324_4071516364_2591409428.mp4'

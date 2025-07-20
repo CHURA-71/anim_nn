@@ -5,29 +5,39 @@ from manim import *
 from typing import TYPE_CHECKING
 
 import warnings
-import os
-import sys
 from pathlib import Path
 import itertools as it
 import random
 # import datasets
 
-# DATA_DIR = Path(get_output_dir(), "2024/transformers/data/")
-# WORD_FILE = Path(DATA_DIR, "OWL3_Dictionary.txt")
+from utils import get_output_dir, random_bright_color_with_hue
+from Convolution import PixelsAsSquareColor
+
+DATA_DIR = Path(get_output_dir(), "transformers/data/")
+WORD_FILE = Path(DATA_DIR, "OWL3_Dictionary.txt")
 
 
 if TYPE_CHECKING:
     from typing import Optional
     from manim.typing import Vector3D
 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-from .Convolution import PixelsAsSquareColor
+# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# if parent_dir not in sys.path:
+#     sys.path.insert(0, parent_dir)
+
 
 def get_paragraph(words, line_len=40, font_size=48):
-    """
-    Handle word wrapping
+    """単語リストから段落テキストを生成する。
+
+    単語を指定された行長で折り返し、段落形式のTextオブジェクトを返す。
+
+    Args:
+        words: 単語のリスト
+        line_len: 1行の最大文字数（デフォルト: 40）
+        font_size: フォントサイズ（デフォルト: 48）
+
+    Returns:
+        Text: 段落形式のTextオブジェクト
     """
     words = list(map(str.strip, words))
     word_lens = list(map(len, words))
@@ -45,6 +55,18 @@ def get_paragraph(words, line_len=40, font_size=48):
 
 
 def softmax(logits, temperature=1.0):
+    """ソフトマックス関数を計算する。
+
+    数値安定性を考慮したソフトマックス関数の実装。
+    温度パラメータで分布のシャープさを調整できる。
+
+    Args:
+        logits: 入力ロジット配列
+        temperature: 温度パラメータ（デフォルト: 1.0）
+
+    Returns:
+        np.ndarray: ソフトマックス確率分布
+    """
     logits = np.array(logits)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')  # Ignore all warnings within this block
@@ -67,7 +89,24 @@ def value_to_color(
     high_negative_color=RED_B,
     min_value=0.0,
     max_value=10.0
-):
+) -> ManimColor:
+    """数値を色に変換する。
+
+    値の大きさに応じて色の濃さを変化させ、正負で色を分ける。
+    正の値は青系、負の値は赤系の色で表現する。
+
+    Args:
+        value: 変換対象の数値
+        low_positive_color: 正の値の薄い色（デフォルト: BLUE_E）
+        high_positive_color: 正の値の濃い色（デフォルト: BLUE_B）
+        low_negative_color: 負の値の薄い色（デフォルト: RED_E）
+        high_negative_color: 負の値の濃い色（デフォルト: RED_B）
+        min_value: 最小値（デフォルト: 0.0）
+        max_value: 最大値（デフォルト: 10.0）
+
+    Returns:
+        ManimColor: 値に対応する色
+    """
     alpha = clip(float(inverse_interpolate(min_value, max_value, abs(value))), 0, 1)
     if value >= 0:
         colors = (low_positive_color, high_positive_color)
@@ -76,8 +115,16 @@ def value_to_color(
     return interpolate_color(*colors, alpha)
 
 
-# def read_in_book(name="tale_of_two_cities"):
-#     return Path(DATA_DIR, name).with_suffix(".txt").read_text()
+def read_in_book(name="tale_of_two_cities"):
+    """指定されたファイル名のテキストファイルを読み込む。
+
+    Args:
+        name: ファイル名（拡張子なし、デフォルト: "tale_of_two_cities"）
+
+    Returns:
+        str: ファイルの内容
+    """
+    return Path(DATA_DIR, name).with_suffix(".txt").read_text()
 
 # def load_image_net_data(dataset_name="image_net_1k"):
 #     data_path = Path(Path.home(), "Documents", dataset_name)
@@ -105,6 +152,22 @@ def value_to_color(
 
 
 def show_matrix_vector_product(scene, matrix, vector, buff=0.25, x_max=999, fix_in_frame=False):
+    """行列とベクトルの積を可視化する。
+
+    行列とベクトルの積を計算し、結果をアニメーションで表示する。
+    各行の計算を順番に表示し、最終的な結果を右辺に表示する。
+
+    Args:
+        scene: Manimシーン
+        matrix: 行列（WeightMatrix）
+        vector: ベクトル（WeightMatrix）
+        buff: 要素間の間隔（デフォルト: 0.25）
+        x_max: 最大値（デフォルト: 999）
+        fix_in_frame: フレーム固定するかどうか（デフォルト: False）
+
+    Returns:
+        tuple: (等号, 右辺の結果行列)
+    """
     """
     show_matrix_vector_productの使用例
         class ShowMatrixProductTest(Scene):
@@ -153,6 +216,18 @@ def show_matrix_vector_product(scene, matrix, vector, buff=0.25, x_max=999, fix_
     return eq, rhs
 
 def matrix_row_vector_product(scene:Scene, row:WeightMatrix, vector:WeightMatrix, entry, fix_in_frame=False):
+    """行列の1行とベクトルの積を可視化する。
+
+    行列の1行とベクトルの内積を計算し、結果をアニメーションで表示する。
+    各要素の積を順番に表示し、累積和を更新する。
+
+    Args:
+        scene: Manimシーン
+        row: 行列の1行（WeightMatrix）
+        vector: ベクトル（WeightMatrix）
+        entry: 結果を表示する要素
+        fix_in_frame: フレーム固定するかどうか（デフォルト: False）
+    """
     def get_rect(elem):
         sur_rect = SurroundingRectangle(elem, buff=0.1).set_stroke(YELLOW, 2)
         if fix_in_frame and config.renderer == "opengl":
@@ -204,6 +279,24 @@ def get_full_matrix_vector_product(
     ellipses_row: int = -2,
     ellipses_col: int = -2,
     ):
+    """完全な行列ベクトル積の数式を生成する。
+
+    行列とベクトルの積を表す数式を生成し、省略記号を含む場合も対応する。
+    左辺（行列×ベクトル）、等号、右辺（各要素の積の和）を返す。
+
+    Args:
+        mat_sym: 行列の記号（デフォルト: "w"）
+        vect_sym: ベクトルの記号（デフォルト: "x"）
+        n_rows: 行数（デフォルト: 5）
+        n_cols: 列数（デフォルト: 5）
+        mat_sym_color: 行列記号の色（デフォルト: BLUE）
+        height: 高さ（デフォルト: 3.0）
+        ellipses_row: 省略記号の行位置（デフォルト: -2）
+        ellipses_col: 省略記号の列位置（デフォルト: -2）
+
+    Returns:
+        tuple: (行列, ベクトル, 等号, 右辺)
+    """
     """
     get_full_matrix_vector_productの使用例
         class FullMatVecProductTest(Scene):
@@ -301,6 +394,19 @@ def show_symbolic_matrix_vector_product(
         run_time_per_row=0.75,
         show_rhs_later=False
     ):
+    """記号的な行列ベクトル積を可視化する。
+
+    行列とベクトルの積を記号的に表示し、各行の計算を順番にハイライトする。
+    右辺の表示タイミングを制御できる。
+
+    Args:
+        scene: Manimシーン
+        matrix: 行列（Matrix）
+        vector: ベクトル（Vector）
+        rhs: 右辺（Vector）
+        run_time_per_row: 1行あたりの実行時間（デフォルト: 0.75）
+        show_rhs_later: 右辺を後で表示するかどうか（デフォルト: False）
+    """
     """
     show_symbolic_matrix_vector_productの使用例
         class MatVecProductTest(Scene):
@@ -363,6 +469,22 @@ def data_flying_animation(
     font_size=48,
     fix_in_frame=False
     ):
+    """データが飛ぶアニメーションを生成する。
+
+    指定された点から指定された方向に"Data"テキストが飛ぶアニメーションを生成する。
+    透明度が変化し、往復するような効果を作る。
+
+    Args:
+        point: 開始点
+        vect: 移動方向ベクトル（デフォルト: 2 * DOWN + RIGHT）
+        color: テキストの色（デフォルト: GREY_C）
+        max_opacity: 最大透明度（デフォルト: 0.75）
+        font_size: フォントサイズ（デフォルト: 48）
+        fix_in_frame: フレーム固定するかどうか（デフォルト: False）
+
+    Returns:
+        UpdateFromAlphaFunc: データが飛ぶアニメーション
+    """
     word = Text("Data", color=color, font_size=font_size)
     if fix_in_frame:
         word.fix_in_frame()
@@ -382,6 +504,23 @@ def get_data_modifying_matrix_anims(
     fix_in_frame=False,
     font_size=48,
     ):
+    """行列を修飾するデータアニメーションを生成する。
+
+    行列の各要素からデータが飛ぶアニメーションと、
+    行列の要素をランダム化するアニメーションを生成する。
+
+    Args:
+        matrix: 修飾対象の行列
+        word_shape: データの配置形状（デフォルト: (5, 10)）
+        alpha_maxes: アルファ値の範囲（デフォルト: (0.7, 0.9)）
+        shift_vect: 移動方向ベクトル（デフォルト: 2 * DOWN + RIGHT）
+        run_time: 実行時間（デフォルト: 3）
+        fix_in_frame: フレーム固定するかどうか（デフォルト: False）
+        font_size: フォントサイズ（デフォルト: 48）
+
+    Returns:
+        list: アニメーションのリスト
+    """
     x_min, x_max = [matrix.get_x(LEFT), matrix.get_x(RIGHT)]
     y_min, y_max = [matrix.get_y(UP), matrix.get_y(DOWN)]
     z = matrix.get_z()
@@ -412,6 +551,16 @@ def get_data_modifying_matrix_anims(
 
 
 def data_modifying_matrix(scene, matrix, *args, **kwargs):
+    """行列を修飾するデータアニメーションを実行する。
+
+    get_data_modifying_matrix_animsで生成されたアニメーションを実行する。
+
+    Args:
+        scene: Manimシーン
+        matrix: 修飾対象の行列
+        *args: get_data_modifying_matrix_animsに渡す位置引数
+        **kwargs: get_data_modifying_matrix_animsに渡すキーワード引数
+    """
     """
     data_modifying_matrixの使用例
         class DataModifyingMatrixTest(Scene):
@@ -425,6 +574,17 @@ def data_modifying_matrix(scene, matrix, *args, **kwargs):
 
 
 def create_pixels(image_mob:ImageMobject, pixel_width=0.1):
+    """画像をピクセル化して表示する。
+
+    画像を指定されたピクセル幅でピクセル化し、PixelsAsSquareColorオブジェクトを生成する。
+
+    Args:
+        image_mob: 画像オブジェクト（ImageMobject）
+        pixel_width: ピクセルの幅（デフォルト: 0.1）
+
+    Returns:
+        PixelsAsSquareColor: ピクセル化された画像
+    """
     """
     create_pixelsの使用例
         class CreatePixelTest(Scene):
@@ -445,6 +605,19 @@ def create_pixels(image_mob:ImageMobject, pixel_width=0.1):
     return pixels
 
 def get_network_connections(layer1, layer2, max_width=2.0, opacity_exp=1.0):
+    """2つの層間のネットワーク接続を生成する。
+
+    2つの層の各要素間を線で接続し、ランダムな色、幅、透明度を持つ接続を作成する。
+
+    Args:
+        layer1: 第1層の要素群
+        layer2: 第2層の要素群
+        max_width: 最大線幅（デフォルト: 2.0）
+        opacity_exp: 透明度の指数（デフォルト: 1.0）
+
+    Returns:
+        VGroup: 接続線のグループ
+    """
     """
     get_network_connectionsの使用例
         class GetNetConTest(Scene):
@@ -473,6 +646,18 @@ def get_network_connections(layer1, layer2, max_width=2.0, opacity_exp=1.0):
 
 
 def get_vector_pair(angle_in_degrees=90, length=1.0, colors=(BLUE, BLUE)):
+    """指定された角度で2つのベクトルペアを生成する。
+
+    2つのベクトルとその間の角度を示す弧とラベルを生成する。
+
+    Args:
+        angle_in_degrees: ベクトル間の角度（度、デフォルト: 90）
+        length: ベクトルの長さ（デフォルト: 1.0）
+        colors: ベクトルの色のタプル（デフォルト: (BLUE, BLUE)）
+
+    Returns:
+        VGroup: ベクトルペア、弧、ラベルのグループ
+    """
     """
     get_vector_pairの使用例
         class GetvecpairTest(Scene):
@@ -504,6 +689,11 @@ def get_vector_pair(angle_in_degrees=90, length=1.0, colors=(BLUE, BLUE)):
 
 
 class NeuralNetwork(VGroup):
+    """ニューラルネットワークを可視化するクラス。
+
+    複数の層とその間の接続を持つニューラルネットワークを生成する。
+    各層のニューロンと接続線の色や太さをランダム化できる。
+    """
     """
     NeuralNetworkの使用例
         class  NeuralNetworkTest(Scene):
@@ -526,6 +716,17 @@ class NeuralNetwork(VGroup):
         stroke_decay=2.0,
         **kwargs
     ):
+        """NeuralNetworkを初期化する。
+
+        Args:
+            layer_sizes: 各層のニューロン数（デフォルト: [6, 12, 6]）
+            neuron_radius: ニューロンの半径（デフォルト: 0.1）
+            v_buff_ratio: 垂直方向のバッファ比率（デフォルト: 0.2）
+            h_buff_ratio: 水平方向のバッファ比率（デフォルト: 7.0）
+            max_stroke_width: 最大線幅（デフォルト: 2.0）
+            stroke_decay: 線幅の減衰（デフォルト: 2.0）
+            **kwargs: VGroupに渡す追加の引数
+        """
         super().__init__(**kwargs)
         self.max_stroke_width = max_stroke_width
         self.stroke_decay = stroke_decay
@@ -558,6 +759,13 @@ class NeuralNetwork(VGroup):
         self.randomize_line_style()
 
     def randomize_layer_values(self):
+        """層の値をランダム化する。
+
+        各接続線の色と太さをランダムに変更する。
+
+        Returns:
+            self: メソッドチェーン用
+        """
         for group in self.lines:
             for line in group:
                 line.set_stroke(
@@ -567,6 +775,13 @@ class NeuralNetwork(VGroup):
         return self
 
     def randomize_line_style(self):
+        """線のスタイルをランダム化する。
+
+        各ニューロンの色と透明度をランダムに変更する。
+
+        Returns:
+            self: メソッドチェーン用
+        """
         for layer in self.layers:
             for dot in layer:
                 dot.set_stroke(WHITE, 1)
@@ -574,14 +789,12 @@ class NeuralNetwork(VGroup):
         return self
 
 
-def random_bright_color_morewhite() -> ManimColor:
-            # random_bright_colorをよりも白に比重を置く
-            # ContextAnimationで使用
-            curr_rgb = color_to_rgb(random_color())
-            new_rgb = 0.25 * curr_rgb + 0.75 * np.ones(3)
-            return ManimColor(new_rgb)
-
 class ContextAnimation(AnimationGroup):
+    """コンテキストアニメーションを生成するクラス。
+
+    複数のソースからターゲットへの弧状のアニメーションを生成する。
+    各弧の強度に応じて線の太さが変化する。
+    """
     """
     ContextAnimationの使用例
         class ContextAnimTest(Scene):
@@ -605,6 +818,7 @@ class ContextAnimation(AnimationGroup):
         sources,
         direction=UP,
         time_width=2,
+        hue_range=(0.1,0.3),
         min_stroke_width=1,
         max_stroke_width=6,
         lag_ratio=None,
@@ -614,6 +828,23 @@ class ContextAnimation(AnimationGroup):
         path_arc=PI / 2,
         **kwargs,
     ):
+        """ContextAnimationを初期化する。
+
+        Args:
+            target: ターゲットオブジェクト
+            sources: ソースオブジェクトのリスト
+            direction: 方向ベクトル（デフォルト: UP）
+            hue_range: 色相範囲（デフォルト: (0.1,0.3)）
+            time_width: 時間幅（デフォルト: 2）
+            min_stroke_width: 最小線幅（デフォルト: 1）
+            max_stroke_width: 最大線幅（デフォルト: 6）
+            lag_ratio: 遅延比率（デフォルト: None）
+            strengths: 強度のリスト（デフォルト: None）
+            run_time: 実行時間（デフォルト: 3）
+            fix_in_frame: フレーム固定するかどうか（デフォルト: False）
+            path_arc: 弧の角度（デフォルト: PI / 2）
+            **kwargs: AnimationGroupに渡す追加の引数
+        """
         arcs = VGroup()
         if strengths is None:
             strengths = np.random.random(len(sources))**2
@@ -624,7 +855,7 @@ class ContextAnimation(AnimationGroup):
                 source.get_edge_center(direction),
                 target.get_edge_center(direction),
                 angle=sign * path_arc,
-                stroke_color=random_bright_color_morewhite(),
+                stroke_color=random_bright_color_with_hue(hue_range),
                 stroke_width=interpolate(
                     min_stroke_width,
                     max_stroke_width,
@@ -660,6 +891,11 @@ class ContextAnimation(AnimationGroup):
 
 
 class TextLabeledArrow(Arrow):
+    """テキストラベル付き矢印クラス。
+
+    矢印の終点にテキストラベルが付いたArrowクラス。
+    3Dシーンでも使用可能で、ラベルの位置と回転を制御できる。
+    """
     """
     矢印の終点にテキストラベルが付いたArrowクラス。
 
@@ -725,6 +961,17 @@ class TextLabeledArrow(Arrow):
         label_rotation: float = PI / 2,
         **kwargs
     ):
+        """TextLabeledArrowを初期化する。
+
+        Args:
+            *args: Arrowクラスに渡される引数（始点、終点など）
+            label_text: 矢印に表示するテキスト（デフォルト: None）
+            font_size: ラベルのフォントサイズ（デフォルト: 24）
+            label_buff: 矢印の終点からラベルまでの距離（デフォルト: 0.1）
+            direction: ラベルの配置方向ベクトル（デフォルト: None）
+            label_rotation: ラベルの回転角度（デフォルト: PI / 2）
+            **kwargs: Arrowクラスに渡されるその他のキーワード引数
+        """
         buff_value = kwargs.pop('buff', 0)
         super().__init__(*args, buff=buff_value,**kwargs)
         if label_text is not None:
@@ -742,6 +989,11 @@ class TextLabeledArrow(Arrow):
 
 
 class WeightMatrix(Matrix):
+    """重み行列を可視化するクラス。
+
+    数値行列を色付きで表示し、値の大きさに応じて色の濃さが変化する。
+    省略記号（...）を含む場合も対応する。
+    """
     def __init__(
         self,
         values: Optional[np.ndarray] = None,
@@ -758,6 +1010,23 @@ class WeightMatrix(Matrix):
         ellipses_col: Optional[int] = -2,
         **kwargs,
     ):
+        """WeightMatrixを初期化する。
+
+        Args:
+            values: 行列の値（デフォルト: None、ランダム生成）
+            shape: 行列の形状（デフォルト: (6, 6)）
+            value_range: 値の範囲（デフォルト: (-9.9, 9.9)）
+            num_decimal_places: 小数点以下の桁数（デフォルト: 1）
+            bracket_h_buff: 括弧の水平バッファ（デフォルト: 0.1）
+            decimal_config: 小数設定（デフォルト: {"include_sign": True}）
+            low_positive_color: 正の値の薄い色（デフォルト: BLUE_E）
+            high_positive_color: 正の値の濃い色（デフォルト: BLUE_B）
+            low_negative_color: 負の値の薄い色（デフォルト: RED_E）
+            high_negative_color: 負の値の濃い色（デフォルト: RED_B）
+            ellipses_row: 省略記号の行位置（デフォルト: -2）
+            ellipses_col: 省略記号の列位置（デフォルト: -2）
+            **kwargs: Matrixに渡す追加の引数
+        """
         if values is not None:
             values = np.array(values)
             if values.ndim == 1:
@@ -797,6 +1066,14 @@ class WeightMatrix(Matrix):
         self.reset_entry_colors()
 
     def _make_display_matrix(self, values):
+        """表示用の行列を作成する。
+
+        Args:
+            values: 元の値配列
+
+        Returns:
+            list: 表示用の行列（省略記号を含む）
+        """
         rows, cols = self.shape
         matrix = []
         values = np.array(values)
@@ -832,12 +1109,27 @@ class WeightMatrix(Matrix):
         return matrix
 
     def _element_to_mobject(self, item):
+        """行列要素をMobjectに変換する。
+
+        Args:
+            item: 変換対象の要素
+
+        Returns:
+            Mobject: 変換されたMobject
+        """
         if isinstance(item, str):
             return MathTex(item)
         else:
             return DecimalNumber(item, num_decimal_places=self.num_decimal_places, **self.decimal_config)
 
     def reset_entry_colors(self):
+        """エントリの色をリセットする。
+
+        各エントリの値に応じて色を設定する。
+
+        Returns:
+            self: メソッドチェーン用
+        """
         for entry in self.get_entries():
             if isinstance(entry, DecimalNumber):
                 value = entry.get_value()
@@ -855,6 +1147,11 @@ class WeightMatrix(Matrix):
 
 
 class NumericEmbedding(WeightMatrix):
+    """数値埋め込みを可視化するクラス。
+
+    WeightMatrixを継承し、埋め込みベクトルを表示する。
+    符号付きの0のマイナス記号を非表示にする機能を持つ。
+    """
     def __init__(
         self,
         values: Optional[np.ndarray] = None,
@@ -870,6 +1167,22 @@ class NumericEmbedding(WeightMatrix):
         light_color: ManimColor = WHITE,
         **kwargs,
     ):
+        """NumericEmbeddingを初期化する。
+
+        Args:
+            values: 埋め込みベクトルの値（デフォルト: None）
+            shape: 形状（デフォルト: None）
+            length: ベクトルの長さ（デフォルト: 7）
+            num_decimal_places: 小数点以下の桁数（デフォルト: 1）
+            ellipses_row: 省略記号の行位置（デフォルト: -2）
+            ellipses_col: 省略記号の列位置（デフォルト: -2）
+            value_range: 値の範囲（デフォルト: (-9.9, 9.9)）
+            bracket_h_buff: 括弧の水平バッファ（デフォルト: 0.1）
+            decimal_config: 小数設定（デフォルト: dict(include_sign=True)）
+            dark_color: 暗い色（デフォルト: GREY_C）
+            light_color: 明るい色（デフォルト: WHITE）
+            **kwargs: WeightMatrixに渡す追加の引数
+        """
         # shape 自動設定または reshape
         if values is not None:
             if len(values.shape) == 1:
@@ -903,6 +1216,11 @@ class NumericEmbedding(WeightMatrix):
 
 
 class EmbeddingArray(VGroup):
+    """埋め込み配列を可視化するクラス。
+
+    複数の埋め込みベクトルを横に並べて表示し、
+    省略記号（...）で一部を置き換えることができる。
+    """
     def __init__(
         self,
         shape=(10, 9),
@@ -913,6 +1231,17 @@ class EmbeddingArray(VGroup):
         backstroke_width=3,
         add_background_rectangle=False,
     ):
+        """EmbeddingArrayを初期化する。
+
+        Args:
+            shape: 配列の形状（行数, 列数）（デフォルト: (10, 9)）
+            height: 高さ（デフォルト: 4）
+            dots_index: 省略記号の位置（デフォルト: -4）
+            buff_ratio: バッファ比率（デフォルト: 0.4）
+            bracket_color: 括弧の色（デフォルト: GREY_B）
+            backstroke_width: 背景ストロークの幅（デフォルト: 3）
+            add_background_rectangle: 背景矩形を追加するかどうか（デフォルト: False）
+        """
         super().__init__()
 
         # Embeddings
@@ -964,6 +1293,14 @@ class EmbeddingArray(VGroup):
             self.swap_embedding_for_dots(dots_index)
 
     def swap_embedding_for_dots(self, dots_index=-4):
+        """埋め込みを省略記号に置き換える。
+
+        Args:
+            dots_index: 省略記号の位置（デフォルト: -4）
+
+        Returns:
+            self: メソッドチェーン用
+        """
         to_replace = self.embeddings[dots_index]
         dots_tex = MathTex(r"\dots")
         dots_tex.set_width(0.75 * to_replace.width)
@@ -974,6 +1311,11 @@ class EmbeddingArray(VGroup):
 
 
 class RandomizeMatrixEntries(Animation):
+    """行列のエントリをランダム化するアニメーション。
+
+    行列の各要素を指定された範囲内でランダムに変化させるアニメーション。
+    色も値に応じて自動的に更新される。
+    """
     """
     RandomizeMatrixEntriesの使用例
         class MatrixTest(Scene):
@@ -985,6 +1327,12 @@ class RandomizeMatrixEntries(Animation):
                 self.wait()
     """
     def __init__(self, matrix, **kwargs):
+        """RandomizeMatrixEntriesを初期化する。
+
+        Args:
+            matrix: ランダム化対象の行列
+            **kwargs: Animationに渡す追加の引数
+        """
         self.matrix = matrix
         self.entries = matrix.get_entries()
 
@@ -1001,6 +1349,11 @@ class RandomizeMatrixEntries(Animation):
         super().__init__(matrix, **kwargs)
 
     def interpolate_mobject(self, alpha: float) -> None:
+        """アニメーションの補間を行う。
+
+        Args:
+            alpha: 補間係数（0.0-1.0）
+        """
         for i, entry in enumerate(self.entries):
             if not isinstance(entry, DecimalNumber):
                 continue
@@ -1015,11 +1368,26 @@ class RandomizeMatrixEntries(Animation):
         self.matrix.reset_entry_colors()
 
 class AbstractEmbeddingSequence(MobjectMatrix):
+    """抽象的な埋め込みシーケンスクラス。
+
+    MobjectMatrixを継承する抽象クラス。
+    """
     pass
 
 
 class Needle(Polygon):
+    """針（Needle）クラス。
+
+    多角形として針の形状を表現し、角度情報を持つ。
+    """
     def __init__(self, length=1, width=5, **kwargs):
+        """Needleを初期化する。
+
+        Args:
+            length: 針の長さ（デフォルト: 1）
+            width: 針の幅（デフォルト: 5）
+            **kwargs: Polygonに渡す追加の引数
+        """
         # 針の形状を定義する3つの頂点
         points = [
             [0, width / 2, 0],
@@ -1035,14 +1403,29 @@ class Needle(Polygon):
         self.angle = angle
 
     def get_angle(self):
+        """針の角度を取得する。
+
+        Returns:
+            float: 針の角度
+        """
         return self.angle
     
     def set_angle(self, angle):
+        """針の角度を設定する。
+
+        Args:
+            angle: 設定する角度
+        """
         self.angle = angle
     
 
 
 class Dial(VGroup):
+    """ダイヤル（Dial）クラス。
+
+    円弧状のダイヤルと針を組み合わせた可視化クラス。
+    値の変化に応じて針が回転し、色も変化する。
+    """
     def __init__(
         self,
         radius=0.5,
@@ -1060,6 +1443,24 @@ class Dial(VGroup):
         set_value_anim_streak_density=6,
         **kwargs
     ):
+        """Dialを初期化する。
+
+        Args:
+            radius: ダイヤルの半径（デフォルト: 0.5）
+            relative_tick_size: 目盛りの相対サイズ（デフォルト: 0.2）
+            value_range: 値の範囲（最小, 最大, ステップ）（デフォルト: (0, 1, 0.1)）
+            initial_value: 初期値（デフォルト: 0）
+            arc_angle: 円弧の角度（デフォルト: 270 * DEGREES）
+            stroke_width: 線の幅（デフォルト: 2）
+            stroke_color: 線の色（デフォルト: WHITE）
+            needle_color: 針の色（デフォルト: BLUE）
+            needle_stroke_width: 針の幅（デフォルト: 5.0）
+            value_to_color_config: 値から色への変換設定（デフォルト: dict()）
+            set_anim_streak_color: アニメーションストリークの色（デフォルト: TEAL）
+            set_anim_streak_width: アニメーションストリークの幅（デフォルト: 4）
+            set_value_anim_streak_density: アニメーションストリークの密度（デフォルト: 6）
+            **kwargs: VGroupに渡す追加の引数
+        """
         # パラメータの保持
         super().__init__(**kwargs)
         self.value_range = value_range
@@ -1098,6 +1499,14 @@ class Dial(VGroup):
         self.set_value(initial_value)
 
     def value_to_angle(self, value):
+        """値を角度に変換する。
+
+        Args:
+            value: 変換対象の値
+
+        Returns:
+            float: 対応する角度
+        """
         # 値を角度に変換するヘルパー関数
         low, high, step = self.value_range
         alpha = inverse_interpolate(low, high, value)
@@ -1108,6 +1517,13 @@ class Dial(VGroup):
 
 
     def set_value(self, value):
+        """ダイヤルの値を設定する。
+
+        針の角度と色を値に応じて設定する。
+
+        Args:
+            value: 設定する値
+        """
         # 針（Polygon）の角度と色を直接設定する
         target_angle = self.value_to_angle(value)
         target_color = value_to_color(
@@ -1118,6 +1534,17 @@ class Dial(VGroup):
         self.needle.set_fill(target_color)
 
     def animate_set_value(self, value, **kwargs):
+        """ダイヤルの値をアニメーションで設定する。
+
+        針の回転とストリークエフェクトを含むアニメーションを生成する。
+
+        Args:
+            value: 設定する値
+            **kwargs: アニメーションに渡す追加の引数
+
+        Returns:
+            AnimationGroup: 値設定アニメーション
+        """
         # 針（Polygon）をアニメーションさせる
         target_angle = self.value_to_angle(value)
         target_color = value_to_color(
@@ -1150,12 +1577,22 @@ class Dial(VGroup):
         ))
 
     def get_random_value(self):
+        """ランダムな値を取得する。
+
+        Returns:
+            float: 値範囲内のランダムな値
+        """
         low, high, step = self.value_range
         return interpolate(low, high, random.random())
 
 
 
 class MachineWithDials(VGroup):
+    """ダイヤル付きマシンクラス。
+
+    複数のダイヤルを格子状に配置したマシンを表現する。
+    ダイヤルの一括操作やランダム化機能を持つ。
+    """
     """
         class MachineDialTest(Scene):
             '''
@@ -1192,6 +1629,20 @@ class MachineWithDials(VGroup):
         fill_opacity=1.0,
         dial_config=dict(),
     ):
+        """MachineWithDialsを初期化する。
+
+        Args:
+            width: マシンの幅（デフォルト: 5.0）
+            height: マシンの高さ（デフォルト: 4.0）
+            n_rows: ダイヤルの行数（デフォルト: 6）
+            n_cols: ダイヤルの列数（デフォルト: 8）
+            dial_buff_ratio: ダイヤル間のバッファ比率（デフォルト: 0.5）
+            stroke_color: 枠線の色（デフォルト: WHITE）
+            stroke_width: 枠線の幅（デフォルト: 1）
+            fill_color: 塗りつぶし色（デフォルト: GREY_D）
+            fill_opacity: 塗りつぶしの透明度（デフォルト: 1.0）
+            dial_config: ダイヤルの設定（デフォルト: dict()）
+        """
         super().__init__()
         box = Rectangle(height=height, width=width)
         box.set_stroke(stroke_color, stroke_width)
@@ -1212,6 +1663,16 @@ class MachineWithDials(VGroup):
         self.add(box, dials)
 
     def random_change_animation(self, lag_factor=0.5, run_time=3.0, **kwargs):
+        """ダイヤルの値をランダムに変更するアニメーションを生成する。
+
+        Args:
+            lag_factor: 遅延係数（デフォルト: 0.5）
+            run_time: 実行時間（デフォルト: 3.0）
+            **kwargs: アニメーションに渡す追加の引数
+
+        Returns:
+            Animation: ランダム変更アニメーション
+        """
         # dialsが空でない場合のみLaggedStartを実行
         if len(self.dials) > 0:
             return LaggedStart(
@@ -1226,6 +1687,15 @@ class MachineWithDials(VGroup):
             return Wait(run_time)
 
     def rotate_all_dials(self, run_time=2, lag_factor=1.0):
+        """すべてのダイヤルを回転させるアニメーションを生成する。
+
+        Args:
+            run_time: 実行時間（デフォルト: 2）
+            lag_factor: 遅延係数（デフォルト: 1.0）
+
+        Returns:
+            Animation: 回転アニメーション
+        """
         # dialsが空でない場合のみLaggedStartを実行
         if len(self.dials) > 0:
             shuffled_dials = list(self.dials)

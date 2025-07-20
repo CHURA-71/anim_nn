@@ -1,5 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:C:/Users/shota/anim_nn/transformers/media/videos/helpers/480p15/partial_movie_files/Test/1185818338_2688965532_2986058000.mp4'
-file 'file:C:/Users/shota/anim_nn/transformers/media/videos/helpers/480p15/partial_movie_files/Test/624642324_2233169564_302232672.mp4'
-file 'file:C:/Users/shota/anim_nn/transformers/media/videos/helpers/480p15/partial_movie_files/Test/624642324_4280398388_1755477284.mp4'
-file 'file:C:/Users/shota/anim_nn/transformers/media/videos/helpers/480p15/partial_movie_files/Test/624642324_4247107814_4179066235.mp4'

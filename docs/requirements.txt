@@ -1,0 +1,60 @@
+# anim_nn Library Dependencies
+# Core dependencies for deep learning visualization
+
+# ManimCE - Mathematical animation engine
+manim>=0.19.0
+
+# PyTorch - Deep learning framework
+torch>=1.13.0
+torchvision>=0.14.0
+
+# NumPy - Numerical computing
+numpy>=1.21.0
+
+# Scientific computing
+scipy>=1.9.0
+
+# Tokenization
+tiktoken>=0.4.0
+
+# Word vectors and NLP
+gensim>=4.2.0
+
+# Progress bars
+tqdm>=4.64.0
+
+# Image processing (optional)
+Pillow>=9.0.0
+
+# Matplotlib for additional plotting (optional)
+matplotlib>=3.5.0
+
+# Pandas for data manipulation (optional)
+pandas>=1.4.0
+
+# Jupyter for interactive development (optional)
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Development dependencies
+# pytest for testing
+pytest>=7.0.0
+
+# Black for code formatting
+black>=22.0.0
+
+# Flake8 for linting
+flake8>=5.0.0
+
+# MyPy for type checking
+mypy>=0.991
+
+# Sphinx for documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+sphinx-autodoc-typehints>=1.19.0
+
+# Additional documentation tools
+myst-parser>=0.18.0
+sphinx-copybutton>=0.5.0
+sphinx-tabs>=3.0.0 

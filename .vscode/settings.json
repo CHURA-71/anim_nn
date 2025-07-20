@@ -1,9 +1,9 @@
 {
+    "python.defaultInterpreterPath": "C:/Users/shota/AppData/Local/Programs/Python/Python312/python.exe",
     //Manimプロジェクトのpyright設定
     //Cursorのpyright設定
     "cursorpyright.analysis.diagnosticSeverityOverrides": {
         "reportWildcardImportFromLibrary": false, //ワイルドカードインポートを許可
         "reportArgumentType": "none" //引数の型チェックを無効化
-
-    }
-}
+    },
+} 
