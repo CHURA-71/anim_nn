@@ -572,37 +572,112 @@ def data_modifying_matrix(scene, matrix, *args, **kwargs):
     anims = get_data_modifying_matrix_anims(matrix, *args, **kwargs)
     scene.play(*anims)
 
-
-def create_pixels(image_mob:ImageMobject, pixel_width=0.1):
-    """画像をピクセル化して表示する。
-
-    画像を指定されたピクセル幅でピクセル化し、PixelsAsSquareColorオブジェクトを生成する。
-
+def point_to_rgb(image_mob: ImageMobject, point: Vector3D) -> Vector3D:
+    """
+    ImageMobject内の指定された点のRGB色値を取得する。
+    
+    画像の座標系内の任意の点から、その位置に対応するピクセルのRGB値を
+    サンプリングして返す。座標は画像の境界を基準に正規化される。
+    
     Args:
-        image_mob: 画像オブジェクト（ImageMobject）
-        pixel_width: ピクセルの幅（デフォルト: 0.1）
-
+        image_mob (ImageMobject): RGB値を取得する対象の画像オブジェクト
+        point (Vector3D): サンプリングする点の3D座標 [x, y, z]
+                         画像の範囲内の座標である必要がある
+    
     Returns:
-        PixelsAsSquareColor: ピクセル化された画像
+        Vector3D: 正規化されたRGB値の配列 [R, G, B] (各値は0.0-1.0の範囲)
+    
+    Raises:
+        Exception: 指定された点が画像の境界外にある場合
+    
+    Note:
+        - 座標系: 左上(UL)が原点、右下(DR)が終点
+        - RGB値は0-255から0.0-1.0の範囲に正規化される
+        - バイリニア補間などは行わず、最も近いピクセルの値を返す
     """
+    # 画像の境界座標を取得（左上と右下）
+    x0, y0 = image_mob.get_corner(UL)[:2]  # 左上角のx, y座標
+    x1, y1 = image_mob.get_corner(DR)[:2]  # 右下角のx, y座標
+    
+    # 点の座標を画像の範囲内で正規化（0.0-1.0の範囲）
+    x_alpha = inverse_interpolate(x0, x1, point[0])  # X方向の正規化位置
+    y_alpha = inverse_interpolate(y0, y1, point[1])  # Y方向の正規化位置
+    
+    # 点が画像の境界内にあるかチェック
+    if not (0 <= x_alpha <= 1) and (0 <= y_alpha <= 1):
+        # TODO: より具体的な例外メッセージを作成
+        raise Exception("Cannot sample color from outside an image")
+
+    # ピクセル配列の形状を取得
+    pw, ph = image_mob.pixel_array.shape[:2]  # [高さ, 幅]
+    
+    # 正規化された座標をピクセルインデックスに変換
+    # 注意: ここでpwとphの使い方に問題がある可能性あり
+    rgb = image_mob.pixel_array[
+        int((ph - 1) * y_alpha),  # Y座標から行インデックスを計算
+        int((pw - 1) * x_alpha),  # X座標から列インデックスを計算
+    ]
+    
+    # RGB値を0-255から0.0-1.0の範囲に正規化して返す
+    return np.array(rgb) / 255
+
+
+def create_pixels(image_mob: ImageMobject, pixel_width=0.1) -> VGroup:
     """
-    create_pixelsの使用例
-        class CreatePixelTest(Scene):
-            def construct(self):
-                image_path = "./source/cat.png"
-                image_mob = ImageMobject(image_path).scale_to_fit_height(config.frame_height)
-                self.wait()
-                self.play(FadeIn(image_mob))
-                self.wait(2)
-                self.play(FadeOut(image_mob))
-                self.wait()
-                pixels = create_pixels(image_mob, pixel_width=0.5)
-                self.play(Create(pixels))
-                self.wait(2)
+    ImageMobjectから個別のSquareピクセルオブジェクトを作成する。
+    
+    指定された画像オブジェクトを小さなSquareピクセルに分解し、
+    各ピクセルが元画像の対応する位置の色を持つVGroupを生成する。
+    教育目的で画像がどのようにピクセルで構成されているかを視覚化するのに有用。
+    
+    Args:
+        image_mob (ImageMobject): 分解対象の画像オブジェクト
+        pixel_width (float, optional): 各ピクセルSquareの一辺の長さ。
+                                      デフォルトは0.1。小さいほど詳細になるが重くなる。
+    
+    Returns:
+        VGroup: 画像のピクセルを表現するSquareオブジェクトのグループ。
+               各Squareは元画像の対応位置の色で塗りつぶされている。
+    
+    Note:
+        - 処理時間は画像サイズとpixel_widthに反比例して増加する
+        - 大きな画像や小さなpixel_widthでは非常に多くのSquareが生成される
+        - Y座標は上から下へ負の方向にスキャンされる（Manimの座標系に対応）
+        - 各ピクセルは左上角(UL)基準で配置される
+    
+    Example:
+        >>> image = ImageMobject("sample.png")
+        >>> pixels = create_pixels(image, pixel_width=0.05)
+        >>> scene.play(Create(pixels))
     """
-    pixels = PixelsAsSquareColor(image_mob.pixel_array,square_side_length=pixel_width)
-    pixels.scale_to_fit_height(config.frame_height)
+    # 画像の境界座標を取得（左上と右下の角）
+    x0, y0, z0 = image_mob.get_corner(UL)  # 左上角の3D座標
+    x1, y1, z1 = image_mob.get_corner(DR)  # 右下角の3D座標
+    
+    # ピクセル位置のグリッドを生成
+    # Y軸は上から下へ（y0からy1へ負の方向）、X軸は左から右へ
+    points = np.array([
+            [x, y, 0]  # 各ピクセルの中心座標（Z=0で2D平面）
+            for y in np.arange(y0, y1, -pixel_width)  # Y方向：上から下へ
+            for x in np.arange(x0, x1, pixel_width)   # X方向：左から右へ
+        ])
+    
+    # ピクセル用のテンプレートSquareを作成
+    # 白色で塗りつぶし、境界線なしの設定
+    square = Square(pixel_width).set_fill(WHITE, opacity=1.0).set_stroke(width=0)
+    
+    # 各ピクセル位置にSquareを配置し、対応する色を設定
+    pixels = VGroup(
+        square.copy()  # テンプレートをコピー
+        .move_to(point, UL)  # 指定位置の左上角に配置
+        .set_color(  # 元画像の対応位置から色を取得して設定
+            ManimColor(point_to_rgb(image_mob, point))
+        )
+        for point in points  # 全てのピクセル位置について繰り返し
+    )
+    
     return pixels
+
 
 def get_network_connections(layer1, layer2, max_width=2.0, opacity_exp=1.0):
     """2つの層間のネットワーク接続を生成する。

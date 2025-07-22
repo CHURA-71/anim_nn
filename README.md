@@ -58,35 +58,35 @@ Manimは内部でLaTeXやffmpegを使用するため、別途インストール�
    - トランスフォーマーにおける演算などを可視化するクラス。
    <br>
    a. `WeightMatrix`：重み行列を可視化するクラス。数値によって色を変更。
-   <br><img src="./source/Matrix.png" width="50%"><br>
+   <br><img src="./source/Matrix.png"><br>
    b. `NumericEmbedding`：埋め込みベクトルを可視化するクラス。
-   <br><img src="./source/NumericEmbedding.png" width="50%"><br>
+   <br><img src="./source/NumericEmbedding.png"><br>
    c. `EmbeddingArray`：埋め込み行列を可視化するクラス。
-   <br><img src="./source/EmbeddingArray.png" width="50%"><br>
+   <br><img src="./source/EmbeddingArray.png"><br>
    d. `RandomizeMatrixEntries`：重み行列の要素をランダムに変更するアニメーションを返す。
-   <br><img src="./source/RandomizeMatrixEntries.gif" width="50%"><br>
+   <br><img src="./source/RandomizeMatrixEntries.gif"><br>
    e. `MachineWithDials`：複数のダイアルを持つMobject。
-  　<br><img src="./source/MachineWithDials.gif" width="50%"><br>
+  　<br><img src="./source/MachineWithDials.gif"><br>
    f. `TextLabeledArrow`：ラベル付きのArrowを作成。ManimCEにはLabeledArrowクラスが用意されているため。使い分ける。
-   <br><img src="./source/TextLabeledArrow.gif" width="50%"><br>
+   <br><img src="./source/TextLabeledArrow.gif"><br>
    g. `ContextAnimation`：sourceからtargetに向けて弧を描くような光のアニメーションを返す。
-   <br><img src="./source/ContextAnimation.gif" width="50%"><br>
+   <br><img src="./source/ContextAnimation.gif"><br>
    h. `NeuralNetwork`：多層パーセプトロンを可視化するクラス。ランダムにノードとエッジの色を変化。
-   <br><img src="./source/NeuralNetwork.gif" width="50%"><br>
+   <br><img src="./source/NeuralNetwork.gif"><br>
    i. `get_vector_pair`：間の角度を指定すると、２つのベクトル(Vecotr)を返すメソッド。
-   <br><img src="./source/get_vector_pair.png" width="50%"><br>
+   <br><img src="./source/get_vector_pair.png"><br>
    j. `get_network_connections`:ネットワークのエッジ(Line)を返すメソッド。
-   <br><img src="./source/get_network_connections.gif" width="50%"><br>
+   <br><img src="./source/get_network_connections.gif"><br>
    k. `create_pixels`：ImageMobectをPixelsに分割するメソッド。
-   <br><img src="./source/create_pixels.png" width="50%"><br>
+   <br><img src="./source/create_pixels.png"><br>
    l. `show_matrix_vector_product`：行列とベクトルの積を可視化するメソッド。
-   <br><img src="./source/show_matrix_vector_product.gif" width="50%"><br>
+   <br><img src="./source/show_matrix_vector_product.gif"><br>
    m. `data_modifying_matrix`：データによって行列の数値が変化するアニメーションを返すメソッド。
-   <br><img src="./source/data_modifying_matrix.gif" width="50%">
+   <br><img src="./source/data_modifying_matrix.gif">
    n. `show_symbolic_matrix_vector_product`：行列とベクトルの積を可視化するメソッド。こちらは数値計算を行わない。
-   <br><img src="./source/show_symbolic_matrix_vector_product.gif" width="50%"><br>
+   <br><img src="./source/show_symbolic_matrix_vector_product.gif"><br>
    o. `get_full_matrix_vector_product`：行列とベクトルの積を返すメソッド。こちらは計算過程のアニメーションなし。
-   <br><img src="./source/get_full_matrix_vector_product.gif" width="50%"><br>
+   <br><img src="./source/get_full_matrix_vector_product.gif"><br>
 
 
 

@@ -116,17 +116,23 @@ def array_to_matrix(
 
 class PixelsAsSquare(VGroup):
     """
-    画像のピクセルデータ（2D NumPy配列）を受け取り、
-    各ピクセルを色付けされたSquareとオプションのテキストで表現するVGroupを生成するクラス。
+    画像データ（NumPy配列）またはImageMobjectを受け取り、
+    create_pixels関数を使用してピクセルをSquareとして表現するVGroupを生成するクラス。
 
     使用例:
-    image_array = np.random.rand(10, 10) * 255  # 10x10のランダムな画像データ
+    # NumPy配列から作成
+    image_array = np.random.rand(10, 10) * 255
     pixel_grid = PixelsAsSquare(image_array)
+    
+    # ImageMobjectから作成
+    image_mob = ImageMobject("sample.png")
+    pixel_grid = PixelsAsSquare(image_mob)
+    
     self.play(Create(pixel_grid))
     """
     def __init__(
         self,
-        image_data: np.ndarray,
+        image_input,  # np.ndarray または ImageMobject
         show_values: bool = True,
         value_format_func=lambda v: f"{v/255.0:.1f}",
         font_size: int = 14,
@@ -141,8 +147,9 @@ class PixelsAsSquare(VGroup):
         PixelsAsSquareのコンストラクタ
 
         Args:
-            image_data (np.ndarray): グレースケール画像のピクセルデータ（2D配列）。
-                                     値の範囲は0-255を想定。
+            image_input: グレースケール画像のピクセルデータ（2D NumPy配列）
+                        またはImageMobjectオブジェクト。
+                        NumPy配列の場合、値の範囲は0-255を想定。
             show_values (bool, optional): ピクセル値のテキストを表示するかどうか。デフォルトはTrue。
             value_format_func (function, optional): ピクセル値をフォーマットする関数。
                                                     デフォルトは0-1の範囲で小数点以下1桁に丸める。
@@ -154,55 +161,103 @@ class PixelsAsSquare(VGroup):
             contrast_threshold (float, optional): テキストの色を白か黒かを切り替える輝度の閾値。
                                                   デフォルトは0.6。
         """
+        from .helpers import create_pixels  # helpers.pyからcreate_pixels関数をインポート
+        
         super().__init__(**kwargs)
         self.font_size = font_size
         self.contrast_threshold = contrast_threshold
+        self.show_values = show_values
+        self.value_format_func = value_format_func
+        self.stroke_width = stroke_width
+        self.stroke_color = stroke_color
 
-
-        if not isinstance(image_data, np.ndarray) or image_data.ndim != 2:
-            raise TypeError("image_data must be a 2D NumPy array.")
-
-        height, width = image_data.shape
-        pixel_mobjects = []
-
-        # Pixel×Pixelsのグリッドを作成
-        for row_data in image_data:
-            for pixel_value in row_data:
-                # ピクセル値（0-255）を輝度（0.0-1.0）に正規化
-                normalized_value = pixel_value / 255.0
-
-                # Squareを作成し、輝度に応じたグレースケールで塗りつぶす
-                square = Square(
-                    side_length=square_side_length,
-                    fill_opacity=1.0,
-                    stroke_width=stroke_width,
-                    stroke_color=stroke_color
-                )
-                square.set_color(rgb_to_color([normalized_value] * 3))
-
-                pixel_group = VGroup(square)
-
-                # show_valuesがTrueの場合、ピクセル値を表示するTextを作成
-                if show_values:
-                    # 背景色に応じて文字色を白か黒に変更し、視認性を確保
-                    text_color = BLACK if normalized_value > contrast_threshold else WHITE
+        # 入力タイプに応じて処理を分岐
+        if isinstance(image_input, ImageMobject):
+            # ImageMobjectの場合：create_pixels関数を使用
+            self.image_mob = image_input
+            pixels = create_pixels(self.image_mob, pixel_width=square_side_length)
+            
+            # テキスト表示の場合、各ピクセルにテキストを追加
+            if show_values:
+                enhanced_pixels = []
+                for pixel_square in pixels:
+                    # ピクセルの色から輝度を計算
+                    pixel_color = pixel_square.get_color()
+                    # ManimColorからRGB値を取得（近似値）
+                    brightness = pixel_color.to_rgb().sum() / 3
+                    
+                    # テキスト色を決定
+                    text_color = BLACK if brightness > contrast_threshold else WHITE
+                    
+                    # 仮のピクセル値（実際の値の取得は複雑なため近似）
+                    pixel_value = int(brightness * 255)
+                    
                     text = Text(
                         value_format_func(pixel_value),
                         font_size=font_size,
                         color=text_color
                     )
+                    
+                    # テキストサイズ調整
+                    if text.width > pixel_square.width * 0.9:
+                        text.scale_to_fit_width(pixel_square.width * 0.9)
+                    
+                    # ピクセルとテキストをグループ化
+                    pixel_group = VGroup(pixel_square, text)
+                    enhanced_pixels.append(pixel_group)
+                
+                self.add(*enhanced_pixels)
+            else:
+                self.add(*pixels)
+                
+        elif isinstance(image_input, np.ndarray):
+            # NumPy配列の場合：従来の処理
+            if image_input.ndim != 2:
+                raise TypeError("image_data must be a 2D NumPy array.")
 
-                    # テキストがSquareに収まるようにスケーリング
-                    if text.width > square.width * 0.9:
-                        text.scale_to_fit_width(square.width * 0.9)
+            height, width = image_input.shape
+            pixel_mobjects = []
 
-                    pixel_group.add(text)
+            # Pixel×Pixelsのグリッドを作成
+            for row_data in image_input:
+                for pixel_value in row_data:
+                    # ピクセル値（0-255）を輝度（0.0-1.0）に正規化
+                    normalized_value = pixel_value / 255.0
 
-                pixel_mobjects.append(pixel_group)
+                    # Squareを作成し、輝度に応じたグレースケールで塗りつぶす
+                    square = Square(
+                        side_length=square_side_length,
+                        fill_opacity=1.0,
+                        stroke_width=stroke_width,
+                        stroke_color=stroke_color
+                    )
+                    square.set_color(rgb_to_color([normalized_value] * 3))
 
-        # 作成したピクセルオブジェクトのリストからVGroupを作成し、グリッド状に配置
-        self.add(*pixel_mobjects)
-        self.arrange_in_grid(rows=height, cols=width, buff=grid_buff)
+                    pixel_group = VGroup(square)
+
+                    # show_valuesがTrueの場合、ピクセル値を表示するTextを作成
+                    if show_values:
+                        # 背景色に応じて文字色を白か黒に変更し、視認性を確保
+                        text_color = BLACK if normalized_value > contrast_threshold else WHITE
+                        text = Text(
+                            value_format_func(pixel_value),
+                            font_size=font_size,
+                            color=text_color
+                        )
+
+                        # テキストがSquareに収まるようにスケーリング
+                        if text.width > square.width * 0.9:
+                            text.scale_to_fit_width(square.width * 0.9)
+
+                        pixel_group.add(text)
+
+                    pixel_mobjects.append(pixel_group)
+
+            # 作成したピクセルオブジェクトのリストからVGroupを作成し、グリッド状に配置
+            self.add(*pixel_mobjects)
+            self.arrange_in_grid(rows=height, cols=width, buff=grid_buff)
+        else:
+            raise TypeError("image_input must be either a numpy.ndarray or ImageMobject.")
 
 
 # ----------------------------------------------------------------------------
@@ -210,12 +265,12 @@ class PixelsAsSquare(VGroup):
 # ----------------------------------------------------------------------------
 class PixelsAsSquareColor(VGroup):
     """
-    RGBAもしくはRGB画像のピクセルデータ（3D NumPy配列）を受け取り、
-    各ピクセルを色付けされたSquareで表現するVGroupを生成するクラス。
+    カラー画像データ（NumPy配列）またはImageMobjectを受け取り、
+    create_pixels関数を使用してピクセルをSquareとして表現するVGroupを生成するクラス。
     """
     def __init__(
         self,
-        image_data: np.ndarray,
+        image_input,  # np.ndarray または ImageMobject
         square_side_length: float = 1.0,
         stroke_width: float = 0.1,
         grid_buff: float = 0,
@@ -224,44 +279,58 @@ class PixelsAsSquareColor(VGroup):
     ):
         """
         Args:
-            image_data (np.ndarray): カラー画像のピクセルデータ（3D配列, shape=(h, w, 3 or 4)）。
-                                    値の範囲は0-255の整数を想定。
+            image_input: カラー画像のピクセルデータ（3D NumPy配列, shape=(h, w, 3 or 4)）
+                        またはImageMobjectオブジェクト。
+                        NumPy配列の場合、値の範囲は0-255の整数を想定。
             square_side_length (float, optional): 各ピクセルを表す正方形の一辺の長さ。デフォルトは1.0。
             stroke_width (float, optional): 正方形の境界線の幅。デフォルトは0.1。
+            grid_buff (float, optional): 各ピクセルを並べる際のバッファの値。デフォルトは0。
             stroke_color (ManimColor, optional): 正方形の境界線の色。デフォルトはGRAY。
         """
+        from .helpers import create_pixels  # helpers.pyからcreate_pixels関数をインポート
+        
         super().__init__(**kwargs)
 
-        # 入力データの形式を検証
-        if not isinstance(image_data, np.ndarray) or image_data.ndim != 3:
-            raise TypeError("image_data must be a 3D NumPy array (height, width, channels).")
-        
-        height, width, channels = image_data.shape
-        if channels not in (3, 4):
-            raise ValueError("image_data must have 3 channels (R, G, B) or 4 (RGBA) channels.")
+        # 入力タイプに応じて処理を分岐
+        if isinstance(image_input, ImageMobject):
+            # ImageMobjectの場合：create_pixels関数を使用
+            self.image_mob = image_input
+            pixels = create_pixels(self.image_mob, pixel_width=square_side_length)
+            self.add(*pixels)
+            
+        elif isinstance(image_input, np.ndarray):
+            # NumPy配列の場合：従来の処理
+            if image_input.ndim != 3:
+                raise TypeError("image_data must be a 3D NumPy array (height, width, channels).")
+            
+            height, width, channels = image_input.shape
+            if channels not in (3, 4):
+                raise ValueError("image_data must have 3 channels (R, G, B) or 4 (RGBA) channels.")
 
-        pixel_mobjects = []
+            pixel_mobjects = []
 
-        # 画像データをループ処理
-        for row_data in image_data:
-            for pixel in row_data:
-                normalized_rgb = pixel[:3] / 255.0  #R,G,B正規化
-                alpha = pixel[3] / 255.0 if channels == 4 else 1.0  # Alpha正規化 or 不透明
-                
-                # Squareを作成し、ピクセル色で塗りつぶす
-                square = Square(
-                    side_length=square_side_length,
-                    fill_opacity=alpha,
-                    stroke_width=stroke_width,
-                    stroke_color=stroke_color
-                )
-                square.set_color(rgb_to_color(normalized_rgb))
-                
-                pixel_mobjects.append(square)
-        
-        # 作成したピクセルオブジェクトのリストからVGroupを作成し、グリッド状に配置
-        self.add(*pixel_mobjects)
-        self.arrange_in_grid(rows=height, cols=width, buff=grid_buff)
+            # 画像データをループ処理
+            for row_data in image_input:
+                for pixel in row_data:
+                    normalized_rgb = pixel[:3] / 255.0  #R,G,B正規化
+                    alpha = pixel[3] / 255.0 if channels == 4 else 1.0  # Alpha正規化 or 不透明
+                    
+                    # Squareを作成し、ピクセル色で塗りつぶす
+                    square = Square(
+                        side_length=square_side_length,
+                        fill_opacity=alpha,
+                        stroke_width=stroke_width,
+                        stroke_color=stroke_color
+                    )
+                    square.set_color(rgb_to_color(normalized_rgb))
+                    
+                    pixel_mobjects.append(square)
+            
+            # 作成したピクセルオブジェクトのリストからVGroupを作成し、グリッド状に配置
+            self.add(*pixel_mobjects)
+            self.arrange_in_grid(rows=height, cols=width, buff=grid_buff)
+        else:
+            raise TypeError("image_input must be either a numpy.ndarray or ImageMobject.")
 
 # ----------------------------------------------------------------------------
 # 畳み込み可視化クラス 
@@ -900,4 +969,141 @@ class ConvolutionCalculationScene(Scene):
         self.play(calculation_animation)
         self.wait(2)
         self.play(FadeOut(conv_calculator.kernel))
+        self.wait(1)
+
+
+class TestImageMobjectPixels(Scene):
+    """
+    ImageMobjectとNumPy配列の両方でPixelsAsSquareクラスをテストするシーン
+    """
+    def construct(self):
+        self.camera.background_color = "#0f0f23"
+        
+        title = Text("PixelsAsSquare: ImageMobject vs NumPy Array", font_size=32).to_edge(UP)
+        self.play(Write(title))
+        
+        try:
+            # 1. ImageMobjectを使用したピクセル表示
+            image_path = "source/Creature.png"  # プロジェクト内の画像ファイル
+            image_mob = ImageMobject(image_path).set_height(3)
+            
+            subtitle1 = Text("From ImageMobject (create_pixels)", font_size=24, color=YELLOW)
+            subtitle1.next_to(title, DOWN, buff=0.3)
+            self.play(Write(subtitle1))
+            
+            # ImageMobjectからPixelsAsSquareを作成
+            pixels_from_image = PixelsAsSquare(
+                image_mob, 
+                square_side_length=0.1,
+                show_values=False  # 値表示は無効（パフォーマンス向上）
+            )
+            pixels_from_image.scale(0.8).shift(LEFT * 3)
+            
+            self.play(Create(pixels_from_image, lag_ratio=0.01, run_time=2))
+            self.wait(1)
+            
+            # 2. NumPy配列を使用したピクセル表示（比較用）
+            test_array = np.random.randint(0, 256, size=(20, 20))  # 20x20のランダムデータ
+            
+            subtitle2 = Text("From NumPy Array (traditional)", font_size=24, color=GREEN)
+            subtitle2.next_to(pixels_from_image, RIGHT, buff=2)
+            self.play(Write(subtitle2))
+            
+            pixels_from_array = PixelsAsSquare(
+                test_array,
+                square_side_length=0.1,
+                show_values=False
+            )
+            pixels_from_array.scale(0.8).shift(RIGHT * 3)
+            
+            self.play(Create(pixels_from_array, lag_ratio=0.01, run_time=2))
+            self.wait(2)
+            
+            # 3. 使用方法の説明
+            usage_examples = VGroup(
+                Text("✓ Supports both ImageMobject and NumPy arrays", font_size=18),
+                Text("✓ Uses optimized create_pixels for ImageMobject", font_size=18),
+                Text("✓ Maintains backward compatibility", font_size=18),
+                Text("✓ Automatic input type detection", font_size=18)
+            ).arrange(DOWN, aligned_edge=LEFT, buff=0.2).to_edge(DOWN)
+            
+            self.play(Write(usage_examples, lag_ratio=0.3))
+            self.wait(3)
+            
+            # 終了
+            all_content = VGroup(
+                title, subtitle1, subtitle2, pixels_from_image, 
+                pixels_from_array, usage_examples
+            )
+            self.play(FadeOut(all_content))
+            self.wait(1)
+            
+        except Exception as e:
+            # エラーハンドリング
+            error_text = Text(
+                f"Error: {str(e)}\nMake sure image file exists in source/ directory",
+                color=RED, font_size=24
+            )
+            self.play(Write(error_text))
+            self.wait(3)
+
+
+class TestColorImageMobject(Scene):
+    """
+    カラー画像でのImageMobject対応テスト
+    """
+    def construct(self):
+        self.camera.background_color = "#1a1a2e"
+        
+        title = Text("PixelsAsSquareColor: Enhanced Input Support", font_size=32).to_edge(UP)
+        self.play(Write(title))
+        
+        # サンプルカラーデータ作成
+        sample_rgb = np.random.randint(0, 256, size=(15, 15, 3), dtype=np.uint8)
+        
+        # 1. NumPy配列からの従来の作成方法
+        traditional_pixels = PixelsAsSquareColor(
+            sample_rgb,
+            square_side_length=0.15,
+            stroke_width=0
+        )
+        traditional_pixels.scale(0.9).shift(LEFT * 3)
+        
+        label1 = Text("NumPy Array Input", font_size=20).next_to(traditional_pixels, UP)
+        
+        self.play(Write(label1))
+        self.play(Create(traditional_pixels, run_time=2))
+        self.wait(1)
+        
+        # 2. 機能説明
+        features_text = VGroup(
+            Text("Enhanced PixelsAsSquareColor Features:", font_size=24, color=BLUE),
+            Text("• Accepts both NumPy arrays and ImageMobjects", font_size=18),
+            Text("• Uses create_pixels for ImageMobject input", font_size=18),
+            Text("• Automatic input type detection and processing", font_size=18),
+            Text("• Maintains all original functionality", font_size=18)
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.3).shift(RIGHT * 2)
+        
+        self.play(Write(features_text, lag_ratio=0.3))
+        self.wait(3)
+        
+        # コード例の表示
+        code_example = Text(
+            """# Usage Examples:
+# From NumPy array
+pixels1 = PixelsAsSquareColor(numpy_array)
+
+# From ImageMobject  
+image = ImageMobject("image.png")
+pixels2 = PixelsAsSquareColor(image)""",
+            font_size=14,
+            font="monospace"
+        ).to_edge(DOWN, buff=0.5)
+        
+        self.play(Write(code_example))
+        self.wait(3)
+        
+        # 終了
+        all_objects = VGroup(title, traditional_pixels, label1, features_text, code_example)
+        self.play(FadeOut(all_objects))
         self.wait(1)

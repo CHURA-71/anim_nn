@@ -252,141 +252,533 @@ def get_piece_rectangles(
     rects.match_y(phrase_pieces)
     return rects
 
-def get_word_to_vec_model(model_name="glove-wiki-gigaword-50"):
+def get_word_to_vec_model(model_name: str = "glove-wiki-gigaword-50"):
     """単語ベクトルモデルを取得またはダウンロードする。
-
+    
+    指定されたモデル名の単語ベクトルモデルをローカルから読み込むか、
+    存在しない場合はgensimのダウンローダーを使用してダウンロードします。
+    ダウンロードされたモデルは自動的にローカルに保存されます。
+    
     Args:
-        model_name: モデル名（デフォルト: "glove-wiki-gigaword-50"）
-
+        model_name (str): 取得するモデル名。
+                         利用可能なモデル:
+                         - "glove-wiki-gigaword-50" (推奨、軽量)
+                         - "glove-wiki-gigaword-100"
+                         - "glove-wiki-gigaword-200" 
+                         - "glove-wiki-gigaword-300"
+                         - "word2vec-google-news-300" (大容量)
+    
     Returns:
-        gensim.models.keyedvectors.KeyedVectors: 単語ベクトルモデル
+        gensim.models.keyedvectors.KeyedVectors: 読み込まれた単語ベクトルモデル
+    
+    Raises:
+        ValueError: 指定されたモデル名が無効な場合
+        ConnectionError: ダウンロードに失敗した場合
+        
+    Note:
+        初回実行時はインターネット接続が必要です。
+        大きなモデル（word2vec-google-news-300等）は1GB以上になる場合があります。
+        
+    Examples:
+        >>> # 軽量モデルを使用
+        >>> model = get_word_to_vec_model("glove-wiki-gigaword-50")
+        >>> vector = model["king"]
+        >>> 
+        >>> # 高精度モデルを使用
+        >>> model = get_word_to_vec_model("word2vec-google-news-300")
     """
+    # ローカル保存用のファイルパスを構築
     filename = str(Path(DATA_DIR, model_name))
     
     # ディレクトリが存在しない場合は作成
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     
+    # ローカルファイルが存在する場合は読み込み
     if os.path.exists(filename):
-        return gensim.models.keyedvectors.KeyedVectors.load(filename)
-    model = gensim.downloader.load(model_name)
-    # モデルがKeyedVectorsインスタンスの場合のみ保存
-    if isinstance(model, gensim.models.keyedvectors.KeyedVectors):
-        model.save(filename)
-    return model
+        try:
+            return gensim.models.keyedvectors.KeyedVectors.load(filename)
+        except Exception as e:
+            print(f"Warning: ローカルモデルの読み込みに失敗: {e}")
+            print("新しいモデルをダウンロードします...")
+    
+    try:
+        # gensimのダウンローダーでモデルを取得
+        print(f"モデル '{model_name}' をダウンロード中...")
+        model = gensim.downloader.load(model_name)
+        
+        # モデルがKeyedVectorsインスタンスの場合のみローカル保存
+        if isinstance(model, gensim.models.keyedvectors.KeyedVectors):
+            try:
+                model.save(filename)
+                print(f"モデルを {filename} に保存しました")
+            except Exception as e:
+                print(f"Warning: モデルの保存に失敗: {e}")
+        
+        return model
+        
+    except Exception as e:
+        raise ValueError(f"モデル '{model_name}' の取得に失敗しました: {e}")
 
-def get_direction_lines(axes:ThreeDAxes, direction, n_lines=500, color=YELLOW, line_length=1.0, stroke_width=3):
+def get_direction_lines(
+    axes: ThreeDAxes, 
+    direction: np.ndarray, 
+    n_lines: int = 500, 
+    color=YELLOW, 
+    line_length: float = 1.0, 
+    stroke_width: float = 3
+) -> VGroup:
+    """3D空間内に方向を示すランダムな線のグループを作成する。
+    
+    指定された方向ベクトルに沿って、3D軸の範囲内にランダムに配置された
+    線のグループを生成します。各線は指定された色と太さで描画され、
+    ベクトル場や方向性の可視化に使用できます。
+    
+    Args:
+        axes (ThreeDAxes): 線を配置する3D軸オブジェクト
+        direction (np.ndarray): 線の方向を決定するベクトル（正規化される）
+        n_lines (int, optional): 生成する線の数。デフォルトは500
+        color: 線の色。Manimの色定数またはカラーコード。デフォルトはYELLOW
+        line_length (float, optional): 各線の長さ。デフォルトは1.0
+        stroke_width (float, optional): 線の太さ。デフォルトは3
+        
+    Returns:
+        VGroup: 生成された線オブジェクトのグループ
+        
+    Note:
+        - 各線は軸の範囲内にランダムに配置される
+        - 線にはカーブが追加され、滑らかな外観になる
+        - 線の両端は細くなるグラデーション効果が適用される
+    """
+    # 正規化された方向ベクトルに基づいて基本線を作成
     line = Line(ORIGIN, line_length * normalize(direction))
-    line.insert_n_curves(20).set_stroke(width=(0, stroke_width, stroke_width, stroke_width, 0))
+    
+    # 線に滑らかなカーブを追加し、グラデーション効果を設定
+    line.insert_n_curves(20).set_stroke(
+        width=(0, stroke_width, stroke_width, stroke_width, 0)
+    )
+    
+    # 指定された数の線をコピーして作成
     lines = VGroup(*(line.copy() for _ in range(n_lines)))
-    # lines = line.replicate(n_lines)
+    
+    # 全ての線に同じ色を設定
     lines.set_color(color)
+    
+    # 各線を軸の範囲内のランダムな位置に配置
     for line in lines:
         line.move_to(axes.c2p(
-            random.uniform(*axes.x_range),
-            random.uniform(*axes.y_range),
-            random.uniform(*axes.z_range),  # pyright: ignore
+            random.uniform(*axes.x_range),      # X軸範囲内のランダムな値
+            random.uniform(*axes.y_range),      # Y軸範囲内のランダムな値
+            random.uniform(*axes.z_range),      # Z軸範囲内のランダムな値
         ))
+    
     return lines
 
 
 class Word2VecScene(ThreeDScene):
+    """Word2Vecの単語埋め込みを3D空間で可視化するManimシーン。
+    
+    このクラスは、単語ベクトルを3次元空間内の矢印として表現し、
+    単語間の意味的関係を視覚的に理解できるようにします。
+    主成分分析（PCA）を使用して高次元ベクトルを3次元に投影します。
+    
+    Attributes:
+        axes_config (dict): 3D軸の設定（範囲、長さなど）
+        label_rotation (float): ラベルの回転角度（度単位）
+        embedding_model (str): 使用する単語埋め込みモデル名
+        default_frame_orientation (tuple): デフォルトのカメラ向き（phi, theta）
+        model: 読み込まれた単語ベクトルモデル
+        basis (np.ndarray): PCAによる基底ベクトル
+        axes (ThreeDAxes): 3D軸オブジェクト
+    
+    Examples:
+        >>> class MyWordVecScene(Word2VecScene):
+        ...     def construct(self):
+        ...         word_arrow = self.get_labeled_vector("king")
+        ...         self.play(FadeIn(word_arrow))
     """
-        Word2Vecの可視化シーン。
-        このシーンでは、単語ベクトルを3D空間にプロットし、
-        各単語を矢印で表現します。
-    """
+    
     def __init__(self, **kwargs):
+        """Word2VecSceneの初期化。
+        
+        Args:
+            **kwargs: ThreeDSceneの引数（camera_config等）
+        """
         super().__init__(**kwargs)
+        # デフォルトのカメラ向き（phi=-30度, theta=70度）
         self.default_frame_orientation = (-30, 70)
 
+    # 3D軸の設定辞書
     axes_config = dict(
-        x_range=(-5, 5, 1),
-        y_range=(-5, 5, 1),
-        z_range=(-4, 4, 1),
-        x_length=8,
-        y_length=8,
-        z_length=6.4,
+        x_range=(-5, 5, 1),    # X軸: -5から5まで、刻み1
+        y_range=(-5, 5, 1),    # Y軸: -5から5まで、刻み1
+        z_range=(-4, 4, 1),    # Z軸: -4から4まで、刻み1
+        x_length=8,            # X軸の表示長さ
+        y_length=8,            # Y軸の表示長さ
+        z_length=6.4,          # Z軸の表示長さ
     )
 
+    # ラベルの回転角度（度単位）
     label_rotation = 0
 
-    # embedding_model = "word2vec-google-news-300"
+    # 使用する埋め込みモデル
+    # より大きなモデル: "word2vec-google-news-300"
     embedding_model = "glove-wiki-gigaword-50"
 
     def setup(self):
+        """シーンの初期設定を行う。
+        
+        以下の処理を順次実行します：
+        1. 親クラスのsetupメソッドを呼び出し
+        2. 指定された単語埋め込みモデルを読み込み
+        3. PCAによる3次元基底を計算
+        4. 3D軸オブジェクトを作成・追加
+        5. カメラの向きを設定
+        
+        Note:
+            このメソッドはシーン開始時に自動的に呼び出されます。
+            モデルの読み込みには時間がかかる場合があります。
+        """
         super().setup()
 
-        # Load model
+        # 指定されたモデル名で単語ベクトルモデルを読み込み
+        # 初回実行時はダウンロードが発生する可能性がある
         self.model = get_word_to_vec_model(self.embedding_model)
 
-        # Decide on basis
-        self.basis = self.get_basis(self.model)
+        # モデルから3次元の主成分基底を計算
+        # 高次元ベクトルを3次元空間に投影するために使用
+        self.basis = self._get_basis(self.model)
 
-        # Add axes
+        # 設定に基づいて3D軸オブジェクトを作成
         self.axes = ThreeDAxes(**self.axes_config)
         self.add(self.axes)
         
-        # Set camera orientation
-        self.set_camera_orientation(phi=self.default_frame_orientation[0], theta=self.default_frame_orientation[1])
+        # カメラの向きを設定（phi: 仰角, theta: 方位角）
+        self.set_camera_orientation(
+            phi=self.default_frame_orientation[0], 
+            theta=self.default_frame_orientation[1]
+        )
 
-    def get_basis(self, model):
+    def _get_basis(self, model) -> np.ndarray:
+        """単語ベクトルモデルから3次元基底を計算する。
+        
+        主成分分析（PCA）を使用して、モデルの全ての単語ベクトルから
+        最も分散の大きい3つの方向を基底として選択します。
+        
+        Args:
+            model: 単語ベクトルモデル（gensim.models.keyedvectors.KeyedVectors）
+        
+        Returns:
+            np.ndarray: 3×モデル次元の基底行列（転置済み）
+                        各行が一つの主成分ベクトルを表す
+        
+        Note:
+            戻り値は転置されているため、ベクトル変換時は 
+            `basis @ vector` の形で使用します。
+        """
         return get_principle_components(model.vectors, 3).T
 
-    def add_plane(self, color=GREY, stroke_width=1.0):
+    def add_plane(self, color=GREY, stroke_width: float = 1.0) -> NumberPlane:
+        """3D軸に対応する2D平面（グリッド）を追加する。
+        
+        XY平面上にグリッド線を描画し、空間の奥行き感を向上させます。
+        背景線とフェード線の2種類の線で構成されます。
+        
+        Args:
+            color: グリッド線の色。デフォルトはGREY
+            stroke_width (float): グリッド線の太さ。デフォルトは1.0
+        
+        Returns:
+            NumberPlane: 作成された平面オブジェクト
+        
+        Note:
+            作成された平面はself.planeに保存され、シーンに自動追加されます。
+        """
         axes = self.axes
+        
+        # 軸の範囲と寸法に合わせて平面を作成
         plane = NumberPlane(
-            x_range=axes.x_range,
-            y_range=axes.y_range,
-            width=axes.get_width(),
-            height=axes.get_height(),
+            x_range=axes.x_range,           # X軸の範囲を継承
+            y_range=axes.y_range,           # Y軸の範囲を継承
+            width=axes.get_width(),         # 軸の幅を継承
+            height=axes.get_height(),       # 軸の高さを継承
             background_line_style=dict(
-                stroke_color=color,
-                stroke_width=stroke_width,
+                stroke_color=color,         # 主要グリッド線の色
+                stroke_width=stroke_width,  # 主要グリッド線の太さ
             ),
             faded_line_style=dict(
-                stroke_opacity=0.25,
-                stroke_width=0.5 * stroke_width,
+                stroke_opacity=0.25,        # フェード線の透明度
+                stroke_width=0.5 * stroke_width,  # フェード線の太さ（半分）
             ),
-            faded_line_ratio=1,
+            faded_line_ratio=1,             # フェード線の比率
         )
+        
+        # インスタンス変数として保存
         self.plane = plane
         self.add(plane)
+        
         return plane
 
     def get_labeled_vector(
         self,
-        word,
-        coords=None,
-        thickness=5,
+        word: str,
+        coords: Optional[np.ndarray] = None,
+        thickness: float = 5,
         color=YELLOW,
-        func_name: str | None = "E",
-        buff=0.05,
-        direction=None,
-        label_config: dict = dict()
-    )-> TextLabeledArrow:
-
+        func_name: Optional[str] = "E",
+        buff: float = 0.05,
+        direction: Optional[np.ndarray] = None,
+        label_config: Optional[dict] = None
+    ) -> TextLabeledArrow:
+        """指定された単語のラベル付きベクトル矢印を作成する。
+        
+        単語を3D空間内のベクトルとして可視化し、適切なラベルを付与します。
+        座標が指定されない場合は、モデルから自動的に計算されます。
+        
+        Args:
+            word (str): 表示する単語
+            coords (Optional[np.ndarray]): ベクトルの3D座標。
+                                            Noneの場合はモデルから自動計算
+            thickness (float): 矢印の太さ。デフォルトは5
+            color: 矢印の色。Manimの色定数またはカラーコード。デフォルトはYELLOW
+            func_name (Optional[str]): 関数名の表示。Noneの場合は単語のみ表示。
+                                        デフォルトは"E"（Embedding関数）
+            buff (float): ラベルと矢印の間隔。デフォルトは0.05
+            direction (Optional[np.ndarray]): ラベルの配置方向。
+                                            Noneの場合は自動決定
+            label_config (Optional[dict]): ラベルの追加設定。
+                                            font_size等のパラメータを指定可能
+        
+        Returns:
+            TextLabeledArrow: ラベル付きの矢印オブジェクト
+        
+        Raises:
+            KeyError: 指定された単語がモデルの語彙に存在しない場合
+        
+        Examples:
+            >>> # 基本的な使用法
+            >>> arrow = scene.get_labeled_vector("king")
+            >>> 
+            >>> # カスタマイズされた矢印
+            >>> arrow = scene.get_labeled_vector(
+            ...     "queen", 
+            ...     thickness=8, 
+            ...     color=RED,
+            ...     label_config={"font_size": 36}
+            ... )
+        """
+        # デフォルト値の設定
+        if label_config is None:
+            label_config = {}
+        
         axes = self.axes
+        
+        # 座標が指定されていない場合は、モデルから計算
         if coords is None:
-            coords = self.basis @ self.model[word.lower()]
+            try:
+                # 単語ベクトルを基底で変換して3D座標を取得
+                coords = self.basis @ self.model[word.lower()]
+            except KeyError:
+                raise KeyError(f"単語 '{word}' がモデルの語彙に存在しません")
+        
+        # 3D座標をシーン座標に変換
         point = axes.c2p(*coords)
+        
+        # ラベル設定の更新
         label_config.update(label_buff=buff)
         if "label_rotation" not in label_config:
             label_config.update(label_rotation=self.label_rotation)
+        
+        # ラベルテキストの決定
+        label_text = word if func_name is None else f"{func_name}({word})"
+        
+        # ラベル付き矢印の作成
         arrow = TextLabeledArrow(
-            axes.get_origin(),
-            point,
-            stroke_width=thickness,
-            stroke_color=color,
-            label_text=word if func_name is None else f"{func_name}({word})",
-            direction=direction,
-            scene=self,
-            **label_config,
+            axes.get_origin(),      # 矢印の開始点（原点）
+            point,                  # 矢印の終点
+            stroke_width=thickness, # 矢印の太さ
+            stroke_color=color,     # 矢印の色
+            label_text=label_text,  # ラベルテキスト
+            direction=direction,    # ラベルの方向
+            scene=self,            # 親シーン
+            **label_config,        # その他の設定
         )
+        
         return arrow
 
     def add_fixed_in_frame_mobjects(self, *mobjects):
+        """オブジェクトをカメラフレームに固定して追加する。
+        
+        3Dシーン内でカメラが回転しても位置が変わらない
+        固定オブジェクト（UIエレメント、ラベルなど）を追加します。
+        
+        Args:
+            *mobjects: フレームに固定するMobjectオブジェクト群
+        
+        Note:
+            - 固定されたオブジェクトは3D空間の回転に影響されません
+            - タイトル、説明文、UIコントロールなどに使用します
+            - オブジェクトはシーンからは除去され、フレームにのみ表示されます
+        
+        Examples:
+            >>> title = Text("Word Embeddings")
+            >>> scene.add_fixed_in_frame_mobjects(title)
+        """
+        # 親クラスのメソッドでフレーム固定オブジェクトとして追加
         super().add_fixed_in_frame_mobjects(*mobjects)
-        self.remove(*mobjects)  # シーンには追加せず、フレームに固定
+        
+        # シーンの3D空間からは除去（フレーム固定のみ）
+        self.remove(*mobjects)
+
+    def get_word_vectors(self, words: list[str]) -> np.ndarray:
+        """複数の単語のベクトル座標を一括取得し、正規化する。
+        
+        Args:
+            words (list[str]): 処理する単語のリスト
+            
+        Returns:
+            np.ndarray: 正規化された3D座標の配列（単語数×3）
+            
+        Note:
+            座標は中心化され、表示範囲に合わせてスケール調整されます。
+        """
+        # 各単語のベクトルを基底で変換
+        coords = np.array([
+            self.basis @ self.model[word.lower()]
+            for word in words if word.lower() in self.model
+        ])
+        
+        # 中心化（平均を0にする）
+        coords -= coords.mean(0)
+        
+        # スケール正規化
+        max_coord = max(coords.max(), -coords.min())
+        if max_coord > 0:
+            coords *= 4.0 / max_coord
+            
+        return coords
+
+    def create_word_embeddings(
+        self, 
+        words: list[str], 
+        thickness: float = 2,
+        base_color=BLUE_D,
+        target_color=BLUE_A,
+        label_font_size: float = 30
+    ) -> VGroup:
+        """複数の単語の埋め込みベクトルを一括作成する。
+        
+        Args:
+            words (list[str]): 可視化する単語のリスト
+            thickness (float): 矢印の太さ
+            base_color: グラデーションの開始色
+            target_color: グラデーションの終了色
+            label_font_size (float): ラベルのフォントサイズ
+            
+        Returns:
+            VGroup: 埋め込みベクトルのグループ
+        """
+        coords = self.get_word_vectors(words)
+        
+        embeddings = VGroup(*(
+            self.get_labeled_vector(
+                word,
+                coord,
+                thickness=thickness,
+                color=interpolate_color(base_color, target_color, random.random()),
+                func_name=None,
+                label_config=dict(font_size=label_font_size)
+            )
+            for word, coord in zip(words, coords)
+        ))
+        
+        return embeddings
+
+    def begin_ambient_rotation(self, rate: float = 0.02):
+        """環境回転アニメーションを開始する。
+        
+        Args:
+            rate (float): 回転速度（rad/frame）
+        """
+        self.begin_ambient_camera_rotation(rate=rate)
+
+class ImageTokens(Scene):
+    """
+    画像をトークン化するシーン
+    """
+    n_divisions = 64
+
+    def construct(self):
+        # Add image
+        image = ImageMobject("./anim_nn/source/Creature.png")  # Change
+        image.set_height(5)
+        self.add(image)
+
+        # Add pixels
+        pixels = create_pixels(image, pixel_width=image.width / self.n_divisions)
+        big_pixels = create_pixels(image, pixel_width=image.width / (self.n_divisions / 4))
+
+        patches = big_pixels.copy().set_fill(opacity=0)
+        p_points = np.array([p.get_center() for p in pixels])
+        bp_points = np.array([bp.get_center() for bp in big_pixels])
+
+        for pixel in pixels:
+            dists = np.linalg.norm(bp_points - pixel.get_center(), axis=1)
+            patches[np.argmin(dists)].add(pixel)
+
+        # Anim test
+        patches.move_to(image.get_center())
+        self.play(FadeIn(patches))
+        self.remove(image)
+        self.play(patches.animate.space_out_submobjects(2.0).scale(0.75))
+        self.wait()
+        self.play(LaggedStart(
+            (patch.animate(rate_func=there_and_back).set_stroke(TEAL, 3)
+            for patch in patches),
+            lag_ratio=5.0 / len(patches),
+        ))
+        self.wait()
+
+class SoundTokens(Scene):
+    def construct(self):
+        # Add wave form
+        n_lines = 100
+        wave_form = Line(UP, DOWN)
+        wave_form = VGroup(*[wave_form.copy() for _ in range(n_lines)])
+        wave_form.arrange(RIGHT)
+        wave_form.set_width(5)
+        wave_form.next_to(ORIGIN, RIGHT)
+
+        def func(x):
+            x *= 1.7
+            return sum([
+                math.sin(x),
+                0.5 * math.sin(2 * x),
+                0.3 * math.sin(3 * x),
+                0.2 * math.sin(4 * x),
+                0.1 * math.sin(5 * x),
+                0.15 * math.sin(6 * x),
+            ])
+
+        for line in wave_form:
+            line.set_height(abs(func(line.get_x())))
+
+        wave_form.center()
+        self.add(wave_form)
+
+        # Subdivide
+        step = 5
+        chunks = VGroup(wave_form[i:i + step] for i in range(0, len(wave_form), step))
+
+        self.add(chunks)
+        self.wait()
+        self.play(chunks.animate.space_out_submobjects(2.0).scale(0.75))
+        self.play(LaggedStart(
+            (chunk.animate(rate_func=there_and_back).set_stroke(TEAL, 3).scale(1.5)
+            for chunk in chunks),
+            lag_ratio=2.0 / len(chunks),
+            run_time=2
+        ))
+        self.wait()
 
 # =========================
 # ここからテスト
@@ -457,7 +849,7 @@ class AmbientWordEmbedding(Word2VecScene):
     def construct(self):
         # Setup - ManimCEではカメラの向きを直接設定
         self.begin_ambient_camera_rotation()
-        self.wait()
+        # self.wait()
         
         axes = self.axes
         axes.set_stroke(width=2)
@@ -495,7 +887,7 @@ class AmbientWordEmbedding(Word2VecScene):
         pre_labels.arrange(DOWN, aligned_edge=LEFT)
         pre_labels.next_to(titles[0], DOWN, buff=0)
         pre_labels.align_to(titles[0][0], LEFT)
-        pre_labels.scale_to_fit_height(config.frame_height*0.7)
+        pre_labels.scale_to_fit_height(config.frame_height*0.65)
         # ManimCEでは背景ストロークの設定方法が変更されている
         for label in pre_labels:
             label.set_stroke(width=2, color=BLACK, background=True)
