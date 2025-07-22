@@ -6,4 +6,6 @@
         "reportWildcardImportFromLibrary": false, //ワイルドカードインポートを許可
         "reportArgumentType": "none" //引数の型チェックを無効化
     },
+    //Github Copilotの設定
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
 } 
