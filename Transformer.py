@@ -288,8 +288,108 @@ def get_direction_lines(axes:ThreeDAxes, direction, n_lines=500, color=YELLOW, l
         ))
     return lines
 
+
+class Word2VecScene(ThreeDScene):
+    """
+        Word2Vecの可視化シーン。
+        このシーンでは、単語ベクトルを3D空間にプロットし、
+        各単語を矢印で表現します。
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.default_frame_orientation = (-30, 70)
+
+    axes_config = dict(
+        x_range=(-5, 5, 1),
+        y_range=(-5, 5, 1),
+        z_range=(-4, 4, 1),
+        x_length=8,
+        y_length=8,
+        z_length=6.4,
+    )
+
+    label_rotation = 0
+
+    # embedding_model = "word2vec-google-news-300"
+    embedding_model = "glove-wiki-gigaword-50"
+
+    def setup(self):
+        super().setup()
+
+        # Load model
+        self.model = get_word_to_vec_model(self.embedding_model)
+
+        # Decide on basis
+        self.basis = self.get_basis(self.model)
+
+        # Add axes
+        self.axes = ThreeDAxes(**self.axes_config)
+        self.add(self.axes)
+        
+        # Set camera orientation
+        self.set_camera_orientation(phi=self.default_frame_orientation[0], theta=self.default_frame_orientation[1])
+
+    def get_basis(self, model):
+        return get_principle_components(model.vectors, 3).T
+
+    def add_plane(self, color=GREY, stroke_width=1.0):
+        axes = self.axes
+        plane = NumberPlane(
+            x_range=axes.x_range,
+            y_range=axes.y_range,
+            width=axes.get_width(),
+            height=axes.get_height(),
+            background_line_style=dict(
+                stroke_color=color,
+                stroke_width=stroke_width,
+            ),
+            faded_line_style=dict(
+                stroke_opacity=0.25,
+                stroke_width=0.5 * stroke_width,
+            ),
+            faded_line_ratio=1,
+        )
+        self.plane = plane
+        self.add(plane)
+        return plane
+
+    def get_labeled_vector(
+        self,
+        word,
+        coords=None,
+        thickness=5,
+        color=YELLOW,
+        func_name: str | None = "E",
+        buff=0.05,
+        direction=None,
+        label_config: dict = dict()
+    )-> TextLabeledArrow:
+
+        axes = self.axes
+        if coords is None:
+            coords = self.basis @ self.model[word.lower()]
+        point = axes.c2p(*coords)
+        label_config.update(label_buff=buff)
+        if "label_rotation" not in label_config:
+            label_config.update(label_rotation=self.label_rotation)
+        arrow = TextLabeledArrow(
+            axes.get_origin(),
+            point,
+            stroke_width=thickness,
+            stroke_color=color,
+            label_text=word if func_name is None else f"{func_name}({word})",
+            direction=direction,
+            scene=self,
+            **label_config,
+        )
+        return arrow
+
+    def add_fixed_in_frame_mobjects(self, *mobjects):
+        super().add_fixed_in_frame_mobjects(*mobjects)
+        self.remove(*mobjects)  # シーンには追加せず、フレームに固定
+
 # =========================
-# テストScene: トークン分割と矩形囲み
+# ここからテスト
 # =========================
 class TestTokenRectScene(Scene):
     """トークン分割と矩形囲みのテストシーン。
@@ -348,123 +448,34 @@ class TestTokenRectScene(Scene):
         self.play(Write(final_text))
         self.wait(3)
 
-class Word2VecScene(ThreeDScene):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.default_frame_orientation = (-30, 70)
 
-    axes_config = dict(
-        x_range=(-5, 5, 1),
-        y_range=(-5, 5, 1),
-        z_range=(-4, 4, 1),
-        x_length=8,
-        y_length=8,
-        z_length=6.4,
-    )
-    label_rotation = PI / 2
-    # embedding_model = "word2vec-google-news-300"
-    embedding_model = "glove-wiki-gigaword-50"
-
-    def setup(self):
-        super().setup()
-
-        # Load model
-        self.model = get_word_to_vec_model(self.embedding_model)
-
-        # Decide on basis
-        self.basis = self.get_basis(self.model)
-
-        # Add axes
-        self.axes = ThreeDAxes(**self.axes_config)
-        self.add(self.axes)
-        
-        # Set camera orientation
-        self.set_camera_orientation(phi=self.default_frame_orientation[0], theta=self.default_frame_orientation[1])
-
-    def get_basis(self, model):
-        return get_principle_components(model.vectors, 3).T
-
-    def add_plane(self, color=GREY, stroke_width=1.0):
-        axes = self.axes
-        plane = NumberPlane(
-            x_range=axes.x_range,
-            y_range=axes.y_range,
-            width=axes.get_width(),
-            height=axes.get_height(),
-            background_line_style=dict(
-                stroke_color=color,
-                stroke_width=stroke_width,
-            ),
-            faded_line_style=dict(
-                stroke_opacity=0.25,
-                stroke_width=0.5 * stroke_width,
-            ),
-            faded_line_ratio=1,
-        )
-        self.plane = plane
-        self.add(plane)
-        return plane
-
-    def get_labeled_vector(
-        self,
-        word,
-        coords=None,
-        thickness=5,
-        color=YELLOW,
-        func_name: str | None = "E",
-        buff=0.05,
-        direction=None,
-        label_config: dict = dict()
-    ):
-        # Return an arrow with word label next to it
-        axes = self.axes
-        if coords is None:
-            coords = self.basis @ self.model[word.lower()]
-        point = axes.c2p(*coords)
-        label_config.update(label_buff=buff)
-        if "label_rotation" not in label_config:
-            label_config.update(label_rotation=self.label_rotation)
-        arrow = TextLabeledArrow(
-            axes.get_origin(),
-            point,
-            stroke_width=thickness,
-            stroke_color=color,
-            label_text=word if func_name is None else f"{func_name}({word})",
-            buff=0,
-            direction=direction,
-            **label_config,
-        )
-        # ManimCEではalways.set_perpendicular_to_cameraは不要
-        # arrow.always.set_perpendicular_to_camera(self.camera.frame)
-        return arrow
 
 class AmbientWordEmbedding(Word2VecScene):
+    """
+    Word2Vecの埋め込みを可視化するシーン。
+    """
     def construct(self):
         # Setup - ManimCEではカメラの向きを直接設定
         self.begin_ambient_camera_rotation()
         self.wait()
         
-        # アンビエント回転は手動で実装（ManimCEでは簡略化）
-        # def update_camera(mob, dt):
-        #     self.camera.frame.rotate(dt * 3 * DEGREES, axis=UP)
-        
         axes = self.axes
         axes.set_stroke(width=2)
         axes.scale_to_fit_height(7)
-        axes.move_to(0.2 * config.frame_width * RIGHT + 1.0 * IN)
+        axes.move_to(2*LEFT + 1.0 * IN)
 
         # Add titles
         titles = VGroup(Text("Words"), Text("Vectors"))
         colors = [YELLOW, BLUE]
         titles.scale_to_fit_height(0.5)
-        xs = [-4.0, axes.get_x()]
+        xs = [-5.0, 5.0]
         for title, x, color in zip(titles, xs, colors):
             title.move_to(x * RIGHT)
-            title.to_edge(UP)
+            title.to_edge(UP, buff=1)
             title.add(Underline(title))
             title.set_color(color)
 
-        arrow = Arrow(titles[0].get_right(), titles[1].get_left(), buff=0.5)
+        arrow = Arrow(titles[0].get_right(), titles[1].get_left(), buff=0.3)
 
         # ManimCEではTexTextの代わりにTextを使用
         arrow_label = Text("Embedding")
@@ -482,14 +493,15 @@ class AmbientWordEmbedding(Word2VecScene):
         words = "All data in deep learning must be represented as vectors".split(" ")
         pre_labels = VGroup(*(Text(word) for word in words))
         pre_labels.arrange(DOWN, aligned_edge=LEFT)
-        pre_labels.next_to(titles[0], DOWN, buff=0.5)
+        pre_labels.next_to(titles[0], DOWN, buff=0)
         pre_labels.align_to(titles[0][0], LEFT)
-        # ManimCEではset_backstroke()の使用方法が変更されている
+        pre_labels.scale_to_fit_height(config.frame_height*0.7)
+        # ManimCEでは背景ストロークの設定方法が変更されている
         for label in pre_labels:
-            label.set_backstroke(True)
+            label.set_stroke(width=2, color=BLACK, background=True)
         
         # フレーム固定オブジェクトを追加
-        self.add_fixed_in_frame_mobjects(pre_labels)
+        self.add_fixed_in_frame_mobjects(pre_labels) 
 
         coords = np.array([
             self.basis @ self.model[word.lower()]
@@ -506,18 +518,14 @@ class AmbientWordEmbedding(Word2VecScene):
                 thickness=2,
                 color=interpolate_color(BLUE_D, BLUE_A, random.random()),
                 func_name=None,
-                label_config=dict(font_size=24)
+                label_config=dict(font_size=30)
             )
             for word, coord in zip(words, coords)
         ))
 
         self.play(LaggedStartMap(FadeIn, pre_labels, shift=0.2 * UP, lag_ratio=0.1, run_time=1))
 
-        # ManimCEではturn_animation_into_updaterの代わりに通常のアニメーションを使用
         self.play(Write(arrow_label), run_time=2)
-        
-        # アンビエント回転は簡略化（ManimCEでは実装が複雑なため）
-        # self.camera.frame.add_updater(update_camera)
         
         for label, vect in zip(pre_labels, embeddings):
             self.play(
@@ -525,7 +533,4 @@ class AmbientWordEmbedding(Word2VecScene):
                 FadeIn(vect, run_time=1)
             )
             self.wait(0.5)
-        
-        # FlashAroundの代わりにFlashを使用
-        self.play(Flash(arrow_label, color=YELLOW, flash_radius=0.5), run_time=1.5)
         self.wait()

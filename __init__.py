@@ -24,7 +24,6 @@ from .helpers import (
     get_network_connections,
     get_vector_pair,
     matrix_row_vector_product,
-    random_bright_color_morewhite,
     show_matrix_vector_product,
     show_symbolic_matrix_vector_product,
 )
@@ -33,6 +32,11 @@ from .NeuralNetwork import (
     NeuralNetworkWithActivation
 )
 
+from .utils import (
+    get_output_dir,
+    random_bright_color_with_hue,
+    random_bright_color_morewhite,
+)
 # ライブラリの公開APIを__all__で明示
 # アルファベット順
 __all__ = [
@@ -64,4 +68,6 @@ __all__ = [
     "random_bright_color_morewhite",
     "show_matrix_vector_product",
     "show_symbolic_matrix_vector_product",
+    "get_output_dir",
+    "random_bright_color_with_hue",
 ]

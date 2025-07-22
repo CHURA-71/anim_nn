@@ -79,7 +79,7 @@ def softmax(logits, temperature=1.0):
         return result
     return exps / np.sum(exps)
 
-#ここまでデバッグ済み
+
 
 def value_to_color(
     value,
@@ -919,7 +919,7 @@ class TextLabeledArrow(Arrow):
     """
     """
     TextLabeledArrowの使用例
-        class TextLabeledArrow3DExample(ThreeDScene):
+        class Test(ThreeDScene):
             def construct(self):
                 axes = ThreeDAxes()
                 self.add(axes)
@@ -930,10 +930,6 @@ class TextLabeledArrow(Arrow):
                 arrow_z = TextLabeledArrow(ORIGIN, 3 * OUT, label_text="Z-Axis", color=YELLOW, scene=self)
                 # 矢印本体を表示
                 self.play(Create(arrow_x), Create(arrow_y), Create(arrow_z), run_time=2)
-                # # ラベルも個別に表示（固定方向を有効にしてから表示）
-                arrow_x.add_fixed_orientation_label(self)
-                arrow_y.add_fixed_orientation_label(self)
-                arrow_z.add_fixed_orientation_label(self)
                 self.play(Write(arrow_x.label), Write(arrow_y.label), Write(arrow_z.label), run_time=2)
                 self.wait(1)
                 # カメラを自動回転
@@ -979,27 +975,13 @@ class TextLabeledArrow(Arrow):
                 direction = normalize(end-start)
             label.next_to(self.get_end(), direction, buff=label_buff)
 
-
-            # 3Dシーンでテキストを常にカメラの方を向かせる
             if always_face_camera:
-                try:
-                    if scene is not None and isinstance(scene, ThreeDScene):
-                        self._needs_fixed_orientation = True
-                except ValueError:
+                if scene is not None and isinstance(scene, ThreeDScene):
+                    scene.add_fixed_orientation_mobjects(label) # 常にカメラの方を向くように設定
+                    scene.remove(label)  # ラベルがaddされてしまうので一旦削除->ラベルの出現タイミングを制御するため
+                else:
                     raise ValueError("If you want to use always_face_camera, scene must be a ThreeDScene")
             self.label = label
-        else:
-            self.label = None
-    
-    def add_fixed_orientation_label(self, scene=None):
-        """固定方向を有効にする（明示的に呼び出す必要がある）"""
-        if hasattr(self, '_needs_fixed_orientation') and self._needs_fixed_orientation:
-            # sceneパラメータが渡された場合はそれを使用、そうでなければscene_idで検索
-            target_scene = scene
-            if target_scene is not None and isinstance(target_scene, ThreeDScene):
-                target_scene.add_fixed_orientation_mobjects(self.label)
-            else:
-                raise ValueError("If you want to use add_fixed_orientation_label, scene must be a ThreeDScene")
 
 
 class WeightMatrix(Matrix):
@@ -1723,88 +1705,4 @@ class MachineWithDials(VGroup):
             )
         else:
             return Wait(run_time)
-
-
-class TextLabeledArrow3DScene(ThreeDScene):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.default_frame_orientation = (-30, 70)
         
-    axes_config = dict(
-        x_range=(-5, 5, 1),
-        y_range=(-5, 5, 1),
-        z_range=(-4, 4, 1),
-        x_length=8,
-        y_length=8,
-        z_length=6.4,
-    )
-    label_rotation = PI / 2
-
-    def setup(self):
-        super().setup()
-
-        self.axes = ThreeDAxes(**self.axes_config)
-        self.add(self.axes)
-
-        self.set_camera_orientation(phi=self.default_frame_orientation[0], theta=self.default_frame_orientation[1])
-
-    def create_labeled_vector(
-        self,
-        *args,
-        word,
-        font_size=24,
-        label_buff=0.1,
-        direction=None,
-        always_face_camera=True, 
-        **kwargs
-    ):
-        axes = self.axes
-        labeled_vector = TextLabeledArrow(
-            axes.get_origin(),
-            
-            label_text=word,
-            font_size=font_size,
-            label_buff=label_buff,
-            direction=direction,
-            always_face_camera=always_face_camera,
-            scene=self,
-            **kwargs
-        )
-        self.play(GrowArrow(labeled_vector))
-        labeled_vector.add_fixed_orientation_label(self)
-        self.play(Write(labeled_vector.label))
-
-class TextLabeledArrow3DExample(TextLabeledArrow3DScene):
-    def construct(self):
-        # X軸方向のベクトル
-        self.create_labeled_vector(
-            start_point=ORIGIN,
-            end_point=3 * RIGHT,
-            word="X-Axis",
-            direction=3 * RIGHT,
-        )
-        self.wait(1)
-        
-        # Y軸方向のベクトル
-        self.create_labeled_vector(
-            start_point=ORIGIN,
-            end_point=3 * UP,
-            word="Y-Axis",
-            direction=3 * UP,
-        )
-        self.wait(1)
-        
-        # Z軸方向のベクトル
-        self.create_labeled_vector(
-            start_point=ORIGIN,
-            end_point=3 * OUT,
-            word="Z-Axis",
-            direction=3 * OUT,
-        )
-        self.wait(1)
-        
-        # カメラを自動回転
-        self.begin_ambient_camera_rotation(rate=0.2)
-        self.wait(6)
-        self.stop_ambient_camera_rotation()
-        self.wait(1)
