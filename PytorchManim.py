@@ -9,7 +9,7 @@ import os
 
 from manim import *
 
-from NeuralNetwork import *
+from neuralnetwork import *
 
 # (PyTorchモデルとヘルパー関数の部分は変更ありません)
 # ----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ def train_model_if_needed(model, file_path="mnist_model.pth"):
 
 
 # ----------------------------------------------------------------------------
-# Manim Sceneの実装 (変更なし)
+# Manim Sceneの実装 
 # ----------------------------------------------------------------------------
 class PyTorchToManim(Scene):
     def MNISTforwardAnim(self, model, network_mob, data_index, output_labels):

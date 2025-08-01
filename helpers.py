@@ -10,8 +10,8 @@ import itertools as it
 import random
 # import datasets
 
-from utils import get_output_dir, random_bright_color_with_hue
-from Convolution import PixelsAsSquareColor
+from .utils import get_output_dir, random_bright_color_with_hue
+
 
 DATA_DIR = Path(get_output_dir(), "transformers/data/")
 WORD_FILE = Path(DATA_DIR, "OWL3_Dictionary.txt")
@@ -572,55 +572,36 @@ def data_modifying_matrix(scene, matrix, *args, **kwargs):
     anims = get_data_modifying_matrix_anims(matrix, *args, **kwargs)
     scene.play(*anims)
 
-def point_to_rgb(image_mob: ImageMobject, point: Vector3D) -> Vector3D:
-    """
-    ImageMobject内の指定された点のRGB色値を取得する。
-    
-    画像の座標系内の任意の点から、その位置に対応するピクセルのRGB値を
-    サンプリングして返す。座標は画像の境界を基準に正規化される。
+
+def point_to_rgb(image_mob: ImageMobject, point: np.ndarray) -> np.ndarray:
+    """画像の指定座標の色を取得する。
     
     Args:
-        image_mob (ImageMobject): RGB値を取得する対象の画像オブジェクト
-        point (Vector3D): サンプリングする点の3D座標 [x, y, z]
-                         画像の範囲内の座標である必要がある
-    
+        image_mob: 画像オブジェクト
+        point: 座標点
+        
     Returns:
-        Vector3D: 正規化されたRGB値の配列 [R, G, B] (各値は0.0-1.0の範囲)
-    
-    Raises:
-        Exception: 指定された点が画像の境界外にある場合
-    
-    Note:
-        - 座標系: 左上(UL)が原点、右下(DR)が終点
-        - RGB値は0-255から0.0-1.0の範囲に正規化される
-        - バイリニア補間などは行わず、最も近いピクセルの値を返す
+        np.ndarray: RGB値の配列
     """
-    # 画像の境界座標を取得（左上と右下）
-    x0, y0 = image_mob.get_corner(UL)[:2]  # 左上角のx, y座標
-    x1, y1 = image_mob.get_corner(DR)[:2]  # 右下角のx, y座標
+    # 画像の境界を取得
+    ul = image_mob.get_corner(UL)
+    dr = image_mob.get_corner(DR)
     
-    # 点の座標を画像の範囲内で正規化（0.0-1.0の範囲）
-    x_alpha = inverse_interpolate(x0, x1, point[0])  # X方向の正規化位置
-    y_alpha = inverse_interpolate(y0, y1, point[1])  # Y方向の正規化位置
+    # 画像のピクセル配列の実際のサイズを取得
+    ph, pw = image_mob.pixel_array.shape[:2]
     
-    # 点が画像の境界内にあるかチェック
-    if not (0 <= x_alpha <= 1) and (0 <= y_alpha <= 1):
-        # TODO: より具体的な例外メッセージを作成
-        raise Exception("Cannot sample color from outside an image")
-
-    # ピクセル配列の形状を取得
-    pw, ph = image_mob.pixel_array.shape[:2]  # [高さ, 幅]
+    # 座標を正規化（0-1の範囲に変換）
+    x_alpha = inverse_interpolate(ul[0], dr[0], point[0])
+    y_alpha = inverse_interpolate(ul[1], dr[1], point[1])
     
     # 正規化された座標をピクセルインデックスに変換
-    # 注意: ここでpwとphの使い方に問題がある可能性あり
-    rgb = image_mob.pixel_array[
-        int((ph - 1) * y_alpha),  # Y座標から行インデックスを計算
-        int((pw - 1) * x_alpha),  # X座標から列インデックスを計算
-    ]
+    # np.clip を使用して範囲内に制限
+    row_index = np.clip(int(ph * y_alpha), 0, ph - 1)
+    col_index = np.clip(int(pw * x_alpha), 0, pw - 1)
     
-    # RGB値を0-255から0.0-1.0の範囲に正規化して返す
-    return np.array(rgb) / 255
-
+    rgb = image_mob.pixel_array[row_index, col_index]
+    
+    return rgb[:3] / 255.0  # RGB値を0-1の範囲に正規化
 
 def create_pixels(image_mob: ImageMobject, pixel_width=0.1) -> VGroup:
     """
@@ -1394,7 +1375,7 @@ class RandomizeMatrixEntries(Animation):
                 mat = WeightMatrix(shape=(4, 4)).scale_to_fit_width(config.frame_width*0.7)
                 self.add(mat)
                 self.wait(0.5)
-                self.play(RandomizeMatrixEntries(mat, run_time=4, lag_ratio=0.1))   #デバッグ済み
+                self.play(RandomizeMatrixEntries(mat, run_time=4, lag_ratio=0.1)) 
                 self.wait()
     """
     def __init__(self, matrix, **kwargs):

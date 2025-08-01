@@ -287,8 +287,7 @@ class PixelsAsSquareColor(VGroup):
             grid_buff (float, optional): 各ピクセルを並べる際のバッファの値。デフォルトは0。
             stroke_color (ManimColor, optional): 正方形の境界線の色。デフォルトはGRAY。
         """
-        from .helpers import create_pixels  # helpers.pyからcreate_pixels関数をインポート
-        
+        from .helpers import create_pixels 
         super().__init__(**kwargs)
 
         # 入力タイプに応じて処理を分岐
@@ -362,6 +361,7 @@ class Convolution(VGroup):
             kernel_stroke_width (float, optional): カーネル矩形の線の太さ。デフォルトは 3.0。
             kernel_fill_opacity (float, optional): カーネル矩形の塗りつぶしの透明度。デフォルトは 0.3。
         """
+        
         super().__init__(**kwargs)
         self.pixel_grid = pixel_grid
         self.image_h, self.image_w = image_shape
